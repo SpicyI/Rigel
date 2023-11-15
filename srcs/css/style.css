@@ -1,0 +1,47 @@
+.body{
+    /* make the body full screen */
+    width: 100vw;
+    height: 100vh;
+    /* make the body black */
+    background: rgb(150, 9, 9);
+    /* remove the margin */
+    margin: 0;
+    /* remove the scroll bar */
+    overflow: hidden;
+
+}
+
+
+#scene-container{
+    /* center it the middle of the window */
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: black;
+}
+
+.loading-screen{
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.8);
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+    align-items: center;
+    color: aliceblue;
+}
+
+#progress-bar{
+    width: 30%;
+    margin-top: 10px;
+}
+
+#label1{
+    color: aliceblue;
+    font-size: 2rem;
+}
