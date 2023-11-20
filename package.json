@@ -1,4 +1,7 @@
 {
+  "devDependencies": {
+    "parcel": "^2.10.3"
+  },
   "dependencies": {
     "dat.gui": "^0.7.9",
     "three": "^0.158.0"

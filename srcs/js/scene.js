@@ -9,19 +9,18 @@ class SceneIDE{
 	constructor()
 	{
 		this.scene = new THREE.Scene();
-		this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+		this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
 		this.renderer = new THREE.WebGLRenderer();
 		this.grid = new THREE.GridHelper(100000,1000, 125, 0);
 		this.axes = new THREE.AxesHelper(5);
-		// set the axes size to 10
-		this.axes.scale.set(10,10,10);
+
 		this.orbit = undefined;
 		this.light = undefined;
 		this.plane = undefined;
 
+		let helpersVisible = true;
 		this.onRender = false;
 		this.showHelpers = true;
-		let helpersVisible = true;
 		this.windowScale = 0;
 
 
@@ -29,6 +28,13 @@ class SceneIDE{
 		this.scene.add(this.grid);
 
 		this.IDESettings = undefined;
+
+
+		// this.scene.fog = new THREE.Fog( 0x888b8e, 0, 750 );
+	
+		window.addEventListener("resize", ()=>{
+			this.updateCanvas();
+		});
 
 
 	}
@@ -59,7 +65,11 @@ class SceneIDE{
 		if(loader)
 			this.scene.background = loader.load(background);
 		else
-			this.scene.background =  new THREE.TextureLoader().load(background);
+		{
+			loader = new THREE.TextureLoader();
+			this.scene.background = loader.load(background);
+			// loader.dispose();
+		}
 	}
 
 	EnabledShadows(){
@@ -135,6 +145,10 @@ class SceneIDE{
         this.IDESettings.add(options,'lightINternsity', 0 , 10).onChange(e => {
             this.light.intensity = e;
         });
+
+		this.IDESettings.add(options,'axesScale').onChange(e => {
+			this.axes.scale.set(e,e,e);
+		});
 
     }
 
