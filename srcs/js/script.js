@@ -15,6 +15,13 @@ const skybox = new URL('../imgs/nebula3.hdr', import.meta.url);
 const ost = new URL('../audio/ost.mp3', import.meta.url);
 
 
+function randomDirection(min, max){
+	let x = Math.cos(THREE.MathUtils.randFloat(min, max));
+	let y = 0;
+	let z = Math.sin(THREE.MathUtils.randFloat(min, max));
+	return [x,y,z];
+}
+
 const option = {
 	showHelpers: true,
 	lightINternsity: 0.75,
@@ -68,10 +75,10 @@ IDE.addGui(gui, option);
 const GameSetGroup = new THREE.Object3D();
 GameSetGroup.position.set(0,0,0);
 
-HDRILoader.load(skybox, function(t){
-	t.mapping = THREE.EquirectangularReflectionMapping;
-	IDE.scene.background = t;
-});
+// HDRILoader.load(skybox, function(t){
+// 	t.mapping = THREE.EquirectangularReflectionMapping;
+// 	IDE.scene.background = t;
+// });
 
 
 // IDE.SetBackground([
@@ -88,18 +95,19 @@ HDRILoader.load(skybox, function(t){
 
 
 
-//sphere 
-const sphere_geo = new THREE.SphereGeometry(2,32,64); 
-const sphere_mat = new THREE.MeshStandardMaterial( { 
+//ball 
+const ballReduis = 2;
+const ball_geo = new THREE.SphereGeometry(ballReduis,32,64); 
+const ball_mat = new THREE.MeshStandardMaterial( { 
 	color: 0xffffff,
 	map: TextureLoader.load(sky)
  } ); 
-const sphere = new THREE.Mesh( sphere_geo, sphere_mat ); 
+const ball = new THREE.Mesh( ball_geo, ball_mat ); 
 
-sphere.position.set(0,3,0);
-sphere.castShadow = true;
+ball.position.set(0,3,0);
+ball.castShadow = true;
 
-GameSetGroup.add(sphere);
+GameSetGroup.add(ball);
 
 
 // game arena
@@ -125,9 +133,8 @@ player2.addGui(gui, "player2");
 
 player1.addControle(document);
 player2.addControle(document, {up: "left", down: "right"});
-// player2.addControle(document);
 
-GameSetGroup.add(player1.body, player2.body);
+GameSetGroup.add(player1.center, player2.center);
 
 IDE.add(GameSetGroup);
 
@@ -150,43 +157,96 @@ audioLoader.load(ost, function(buffer){
 		sound.pause();
 	});
 	
-	IDE.add(sound);
+IDE.add(sound);
 	
 	
-	document.addEventListener("click", function(){
-			if (sound.isPlaying){
-		return;
+// document.addEventListener("click", function(){
+// 	if (sound.isPlaying){
+// 		return;
+// 	}
+// 	else{
+// 		sound.play();
+// 	}
+// });
+				
+let direction;
+
+document.addEventListener("keydown", function(event){
+	if (event.code == "KeyP")
+	{
+		console.log("pause");
+		let pos = new THREE.Vector3(0,3,0);
+		ball.position.copy(pos);
 	}
-	else{
-			sound.play();
-		}
-	});
-	
-	
-	
-	// const step = 2;
-	
-	// const canvas = document.getElementById("c");
-	
-	// document.addEventListener("keydown", function(event){
-		// 	if (event.key == "ArrowUp")
-		// 	{
-			// 		paddle1.position.z -= step;
-			// 	}
-			// 	else if (event.key == "ArrowDown"){
-				// 		paddle1.position.z += step;	
-				// 	}
-				// });
-				
-				
+});
+
+const gameplay = {
+	speed: 1
+};
+
+gui.add(gameplay, "speed", 0, 200).onChange((e) => {
+	speed = e;
+});
+
+
+// direction = new THREE.Vector3(...randomDirection(- Math.PI / 6, Math.PI / 6)).normalize();
+direction = new THREE.Vector3(2,0,0).normalize();
+
+let axis = new THREE.Vector3(0,1,0);
+const quaternion = new THREE.Quaternion().setFromAxisAngle(axis, THREE.MathUtils.degToRad(10));
+
+let clock = new THREE.Clock();
+
 function Gameloop() {
 	IDE.render();
 	player1.updateMoves();
 	player2.updateMoves();
 
-	const movement = new THREE.Vector3(0.1, 0, 3);
-	sphere.position.add(movement);
-	
+	// check if ball is out of the arena
+	let raduisx = ballReduis * (direction.z / Math.abs(direction.z));
+	let raduisz = ballReduis * (direction.x / Math.abs(direction.x));
+	// bouncing on the walls
+	if (ball.position.z + raduisx > game_arena.height / 2 || ball.position.z + raduisx < - game_arena.height / 2)
+		direction.z *= -1;
+
+	if (player1.checkCollision(ball)){
+		if (ball.position.z > player1.center.position.z){
+			direction.applyQuaternion(quaternion);
+			direction.x *= -1;
+		}
+		else if (ball.position.z < player1.center.position.z){
+			direction.x *= -1;
+			direction.applyQuaternion(quaternion);
+		}
+		else{
+			direction.x *= -1;
+		}
+	}
+	else if (player2.checkCollision(ball)){
+		if (ball.position.z > player2.center.position.z){
+			direction.x *= -1;
+			direction.applyQuaternion(quaternion);
+		}
+		else if (ball.position.z < player2.center.position.z){
+			direction.applyQuaternion(quaternion);
+			direction.x *= -1;
+		}
+		else{
+			direction.x *= -1;
+		}
+	}
+	// if ball is out of the arena
+	if (ball.position.x  > game_arena.width / 2 || ball.position.x  < - game_arena.width / 2)
+	{
+		direction = new THREE.Vector3(...randomDirection(- Math.PI / 6, Math.PI / 6)).normalize();
+		ball.position.set(0,3,0);
+	}
+
+	let deltaTime = clock.getDelta();
+	ball.position.add(direction.clone().multiplyScalar(gameplay.speed * deltaTime));
+	// totate the ball
+	ball.rotation.x += 0.01;
+	ball.rotation.y += 0.01;
 }
 
 IDE.renderer.setAnimationLoop(Gameloop);

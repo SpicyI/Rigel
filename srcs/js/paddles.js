@@ -71,30 +71,42 @@ class Controls{
 
 class Paddle
 {
+
     constructor( extrudeSettings = this.#defaultExtrudeSettings(), width = 1, length = 3){
 
         let shape = this.#createPaddleShape(length, width);
 
-        let extrudeFolder = undefined;
-
         this.extrudeSettings = extrudeSettings;
         this.width = width;
         this.length = length;
-
-
+        
+        
         this.geometry = new THREE.ExtrudeGeometry(shape,  extrudeSettings);
         this.material = new THREE.MeshStandardMaterial({color: 0xff00ff});
         this.body = new THREE.Mesh(this.geometry, this.material);
-
+        
         this.body.castShadow = true;
-
-        this.position = this.body.position;
-        this.rotation = this.body.rotation;
-
+        
+        
         this.controls = new Controls();
-        this.arenaRef = undefined;
-        this.controlSet = undefined;
+        
+        
+        let g = new THREE.BoxGeometry(1,1,1);
+        let m = new THREE.MeshStandardMaterial({color: 0x00ff00});
+        this.vis = new THREE.Mesh(g, m);
+        
+        this.center = new THREE.Object3D();
+        this.center.add(this.body, this.vis);
 
+        this.body.position.z = -(this.extrudeSettings.depth / 2);
+        this.body.position.y = this.extrudeSettings.bevelSize;
+        this.body.position.x =  -(this.length / 2)
+        this.vis.position.y = 4;
+        
+        this.position = this.center.position;
+        this.rotation = this.center.rotation;
+        this.depth = extrudeSettings.depth / 2;
+        
     }
 
     #defaultExtrudeSettings(){
@@ -128,7 +140,7 @@ class Paddle
     }
 
     setPos(x = 0, y = 0 , z = 0){
-        this.body.position.set(x, y, z);
+        this.center.position.set(x, y, z);
     }
 
     updateExtrude(extrudeSettings)
@@ -139,13 +151,15 @@ class Paddle
             delete this.geometry;
             delete this.shape;
 
-
             this.shape = this.#createPaddleShape(this.length,this.width);
             this.geometry = new THREE.ExtrudeGeometry(this.shape,  extrudeSettings);
+
             this.body.geometry = this.geometry;
             this.extrudeSettings = extrudeSettings;
 
-            // this.body.position.x = -(this.extrudeSettings.depth / 2);
+            this.depth = extrudeSettings.depth / 2;
+            this.body.position.z = -(this.extrudeSettings.depth / 2);
+
         }
     }
 
@@ -173,15 +187,17 @@ class Paddle
 
     setSide(arena, side = 'right'){
 
-        const  x =  arena.position.x - (this.length / 2) + (side === 'left' ? -arena.size / 2 : arena.size / 2); 
-        const  z = -this.extrudeSettings.depth / 2;
-        const  y = this.extrudeSettings.bevelSize;
+        const  x =  arena.position.x + (side === 'left' ? -arena.size / 2 : arena.size / 2); 
+        const  z = arena.position.z;
+        const  y = arena.position.y;
 
-        this.body.position.set(x, y, z);
+        this.center.position.set(x, y, z);
+        this.side = side;
         this.arenaRef = arena;
     }
 
     addControle(element, controlSet = {up: 'a', down: 'd'}){
+        
         this.controlSet = controlSet;
 
         element.addEventListener('keydown', (e) => {this.controls.OnkeyDown(e)});
@@ -191,7 +207,7 @@ class Paddle
     }
 
     updateMoves(){
-        const speed = 1.25;
+        const speed = 0.5;
 
         let up  = this.controls.getKeySatate(this.controlSet.up);
         let down = this.controls.getKeySatate(this.controlSet.down);
@@ -199,14 +215,31 @@ class Paddle
         if (up === undefined || down === undefined)
             return ;
         else if (up){
-            if (this.body.position.z - speed >= this.arenaRef.height / -2)
-                this.body.position.z -= speed;
+            let upperEdge = this.center.position.z - this.extrudeSettings.depth / 2;
+            if (upperEdge - speed >= this.arenaRef.height / -2)
+                this.center.position.z -= speed;
         }
         else if (down)
         {
-            if (this.body.position.z + speed <= (this.arenaRef.height / 2) - this.extrudeSettings.depth)
-                this.body.position.z += speed;
+            let lowerEdge = this.center.position.z + this.extrudeSettings.depth / 2;
+            if (lowerEdge + speed <= (this.arenaRef.height / 2))
+                this.center.position.z += speed;
         }
+    }
+
+    checkCollision(ball){
+        let minX = this.center.position.x - this.length / 2;
+        let minZ = this.center.position.z - this.depth - this.extrudeSettings.bevelThickness;
+
+        let maxX = this.center.position.x + this.length / 2;
+        let maxZ = this.center.position.z + this.depth + this.extrudeSettings.bevelThickness;
+        
+        let ballX = ball.position.x;
+        let ballZ = ball.position.z;
+
+        if (ballX > minX && ballX < maxX && ballZ > minZ && ballZ < maxZ)
+            return true;
+        return false;
     }
     
 
