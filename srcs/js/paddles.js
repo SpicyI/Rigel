@@ -72,7 +72,7 @@ class Controls{
 class Paddle
 {
 
-    constructor( extrudeSettings = this.#defaultExtrudeSettings(), width = 1, length = 3){
+    constructor( extrudeSettings = this.#defaultExtrudeSettings(), width = 1, length = 3, clr = 0xff00ff){
 
         let shape = this.#createPaddleShape(length, width);
 
@@ -82,7 +82,7 @@ class Paddle
         
         
         this.geometry = new THREE.ExtrudeGeometry(shape,  extrudeSettings);
-        this.material = new THREE.MeshStandardMaterial({color: 0xff00ff});
+        this.material = new THREE.MeshStandardMaterial({color: clr});
         this.body = new THREE.Mesh(this.geometry, this.material);
         
         this.body.castShadow = true;
@@ -90,6 +90,7 @@ class Paddle
         
         this.controls = new Controls();
         
+
         
         let g = new THREE.BoxGeometry(1,1,1);
         let m = new THREE.MeshStandardMaterial({color: 0x00ff00});
@@ -107,6 +108,8 @@ class Paddle
         this.rotation = this.center.rotation;
         this.depth = extrudeSettings.depth / 2;
         
+        console.log(this.depth + this.extrudeSettings.bevelThickness);
+        console.log(this.length / 2);
     }
 
     #defaultExtrudeSettings(){
@@ -134,9 +137,9 @@ class Paddle
     }
 
 
-    clone()
+    clone(color)
     {
-        return new Paddle(this.extrudeSettings, this.width , this.length);
+        return new Paddle(this.extrudeSettings, this.width , this.length, color);
     }
 
     setPos(x = 0, y = 0 , z = 0){
@@ -185,6 +188,10 @@ class Paddle
         
     }
 
+    addArena(arena){
+        this.arenaRef = arena;
+    }
+
     setSide(arena, side = 'right'){
 
         const  x =  arena.position.x + (side === 'left' ? -arena.size / 2 : arena.size / 2); 
@@ -196,7 +203,7 @@ class Paddle
         this.arenaRef = arena;
     }
 
-    addControle(element, controlSet = {up: 'a', down: 'd'}){
+    addControle(element, controlSet = {up: 'd', down: 'a'}){
         
         this.controlSet = controlSet;
 
@@ -206,8 +213,8 @@ class Paddle
         element.addEventListener('click', (e) => {this.controls.OnMouseClick(e)});
     }
 
-    updateMoves(){
-        const speed = 0.5;
+    updateMoves(socket){
+        const speed = 2;
 
         let up  = this.controls.getKeySatate(this.controlSet.up);
         let down = this.controls.getKeySatate(this.controlSet.down);
@@ -216,17 +223,26 @@ class Paddle
             return ;
         else if (up){
             let upperEdge = this.center.position.z - this.extrudeSettings.depth / 2;
-            if (upperEdge - speed >= this.arenaRef.height / -2)
+            if (upperEdge - speed >= this.arenaRef.height / -2){
                 this.center.position.z -= speed;
+                socket.emit('playerMove', {position: this.center.position, rotation: this.center.rotation});
+            }
         }
         else if (down)
         {
             let lowerEdge = this.center.position.z + this.extrudeSettings.depth / 2;
-            if (lowerEdge + speed <= (this.arenaRef.height / 2))
+            if (lowerEdge + speed <= (this.arenaRef.height / 2)){
                 this.center.position.z += speed;
+                socket.emit('playerMove', {position: this.center.position, rotation: this.center.rotation});
+            }
         }
     }
 
+    receiveMoves(socket){
+        socket.on('playerMove', (data)=>{
+            this.center.position.set(data.position.x, data.position.y, data.position.z);
+        });
+    }
     checkCollision(ball){
         let minX = this.center.position.x - this.length / 2;
         let minZ = this.center.position.z - this.depth - this.extrudeSettings.bevelThickness;

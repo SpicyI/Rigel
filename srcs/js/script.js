@@ -8,8 +8,11 @@ import * as dat from 'dat.gui';
 import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader.js";
 import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls.js';
 
+import {io} from "socket.io-client";
+
 import sky from "../imgs/sky.jpg";
 import stars from "../imgs/stars.jpg";
+import { Socket } from "socket.io";
 
 const skybox = new URL('../imgs/nebula3.hdr', import.meta.url);
 const ost = new URL('../audio/ost.mp3', import.meta.url);
@@ -44,17 +47,49 @@ const arenaConfig = {
 	height: 10
 };
 
+const socket = io("http://10.14.5.8:3000");
+socket.on("connect", ()=>{
+	console.log(`connected with id: ${socket.id}`);
+});
+
+// game starter
+let startGame =  false;
+const lobbyID = "6969";
+
+socket.emit("joinLobby", lobbyID);
+
+
+// !!!!!!!!!!!! Testing !!!!!!!!!!!!!
+// const btn = document.getElementById("btn");
+// const paragh = document.getElementById("par");
+// paragh.textContent = "hello there";
+// console.log(btn);
+
+
+// socket.on("update", (data)=>{
+// 	paragh.textContent += " - " + data + "\n";
+// });
+
+// btn.addEventListener("click", ()=>{
+// 	socket.emit("update", "ma3loma");
+// });
+
+// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 
 const progressBar = document.getElementById("progress-bar");
 const progressBarContainer = document.querySelector(".loading-screen");
-
 const loadManager = new THREE.LoadingManager();
 loadManager.onProgress = (url, item, total)=>{
 	progressBar.value = (item / total) * 100;
 };
+
 loadManager.onLoad = () =>{
-	progressBarContainer.style.display = 'none';
+	// progressBarContainer.style.display = 'none';
+	socket.emit("playerReady", socket.id);
 };
+
+
 
 
 // loaders
@@ -75,10 +110,11 @@ IDE.addGui(gui, option);
 const GameSetGroup = new THREE.Object3D();
 GameSetGroup.position.set(0,0,0);
 
-// HDRILoader.load(skybox, function(t){
-// 	t.mapping = THREE.EquirectangularReflectionMapping;
-// 	IDE.scene.background = t;
-// });
+HDRILoader.load(skybox, function(t){
+	t.mapping = THREE.EquirectangularReflectionMapping;
+	IDE.scene.background = t;
+});
+
 
 
 // IDE.SetBackground([
@@ -121,23 +157,15 @@ GameSetGroup.add(game_arena.body);
 
 // ! players
 const paddle_generator = new Paddle(undefined, 1 ,  3);
-const player1 = paddle_generator.clone();
-const player2 = paddle_generator.clone();
+const player = paddle_generator.clone(0x00ff00);
+const opponent = paddle_generator.clone(0xff0000);
 
-
-player1.setSide(game_arena, "left");
-player2.setSide(game_arena, "right");
-
-player1.addGui(gui, "player1");
-player2.addGui(gui, "player2");
-
-player1.addControle(document);
-player2.addControle(document, {up: "left", down: "right"});
-
-GameSetGroup.add(player1.center, player2.center);
+player.addGui(gui, "player");
+player.addArena(game_arena);
+opponent.addGui(gui, "opponent");
+GameSetGroup.add(player.center, opponent.center);
 
 IDE.add(GameSetGroup);
-
 
 
 
@@ -151,104 +179,57 @@ IDE.camera.add(audioListener);
 const sound = new THREE.Audio(audioListener);
 
 audioLoader.load(ost, function(buffer){
-		sound.setBuffer(buffer);
-		sound.setLoop(true);
-		sound.setVolume(0.5);
-		sound.pause();
-	});
-	
-IDE.add(sound);
-	
-	
-// document.addEventListener("click", function(){
-// 	if (sound.isPlaying){
-// 		return;
-// 	}
-// 	else{
-// 		sound.play();
-// 	}
-// });
-				
-let direction;
-
-document.addEventListener("keydown", function(event){
-	if (event.code == "KeyP")
-	{
-		console.log("pause");
-		let pos = new THREE.Vector3(0,3,0);
-		ball.position.copy(pos);
-	}
+	sound.setBuffer(buffer);
+	sound.setLoop(true);
+	sound.setVolume(0.5);
+	sound.pause();
 });
 
-const gameplay = {
-	speed: 1
+IDE.add(sound);
+
+const gameSettings = {
+	speed: 50
 };
 
-gui.add(gameplay, "speed", 0, 200).onChange((e) => {
+gui.add(gameSettings, "speed", 0, 200).onChange((e) => {
 	speed = e;
 });
 
 
+socket.on("startGame", (data)=>{
+	startGame = true;
+
+	progressBarContainer.style.display = 'none';
+	socket.on("initPlayer", (pos)=>{
+		player.setPos(pos.x, pos.y, pos.z);
+	});
+	player.addControle(document);
+	opponent.receiveMoves(socket);
+	IDE.add(GameSetGroup);
+});
 // direction = new THREE.Vector3(...randomDirection(- Math.PI / 6, Math.PI / 6)).normalize();
-direction = new THREE.Vector3(2,0,0).normalize();
 
 let axis = new THREE.Vector3(0,1,0);
 const quaternion = new THREE.Quaternion().setFromAxisAngle(axis, THREE.MathUtils.degToRad(10));
 
 let clock = new THREE.Clock();
 
+
+socket.on('ballMove', (data)=>{
+	ball.position.copy(data.position);
+});
+
+
 function Gameloop() {
 	IDE.render();
-	player1.updateMoves();
-	player2.updateMoves();
-
-	// check if ball is out of the arena
-	let raduisx = ballReduis * (direction.z / Math.abs(direction.z));
-	let raduisz = ballReduis * (direction.x / Math.abs(direction.x));
-	// bouncing on the walls
-	if (ball.position.z + raduisx > game_arena.height / 2 || ball.position.z + raduisx < - game_arena.height / 2)
-		direction.z *= -1;
-
-	if (player1.checkCollision(ball)){
-		if (ball.position.z > player1.center.position.z){
-			direction.applyQuaternion(quaternion);
-			direction.x *= -1;
-		}
-		else if (ball.position.z < player1.center.position.z){
-			direction.x *= -1;
-			direction.applyQuaternion(quaternion);
-		}
-		else{
-			direction.x *= -1;
-		}
+	if (startGame){	
+		player.updateMoves(socket);	
+		// totate the ball
+		ball.rotation.x += 0.01;
+		ball.rotation.y += 0.01;
 	}
-	else if (player2.checkCollision(ball)){
-		if (ball.position.z > player2.center.position.z){
-			direction.x *= -1;
-			direction.applyQuaternion(quaternion);
-		}
-		else if (ball.position.z < player2.center.position.z){
-			direction.applyQuaternion(quaternion);
-			direction.x *= -1;
-		}
-		else{
-			direction.x *= -1;
-		}
-	}
-	// if ball is out of the arena
-	if (ball.position.x  > game_arena.width / 2 || ball.position.x  < - game_arena.width / 2)
-	{
-		direction = new THREE.Vector3(...randomDirection(- Math.PI / 6, Math.PI / 6)).normalize();
-		ball.position.set(0,3,0);
-	}
-
-	let deltaTime = clock.getDelta();
-	ball.position.add(direction.clone().multiplyScalar(gameplay.speed * deltaTime));
-	// totate the ball
-	ball.rotation.x += 0.01;
-	ball.rotation.y += 0.01;
 }
 
+
+
 IDE.renderer.setAnimationLoop(Gameloop);
-				
-				
