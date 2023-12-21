@@ -4,8 +4,16 @@ import * as dat from 'dat.gui'
 
 
 class Arena{
-    constructor(size = 200, aspect = 3/4){
+    size: number;
+    aspect: number;
+    width: number;
+    height: number;
+    geometry: THREE.PlaneGeometry;
+    material: THREE.MeshStandardMaterial;
+    body: THREE.Mesh;
+    position: THREE.Vector3;
 
+    constructor(size: number = 200, aspect: number = 3/4){
         this.size = size;
         this.aspect = aspect;
         this.width = size;

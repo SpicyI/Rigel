@@ -17,6 +17,7 @@
     "util": "^0.12.5"
   },
   "dependencies": {
+    "@types/socket.io": "^3.0.2",
     "dat.gui": "^0.7.9",
     "socket.io": "^4.7.2",
     "socket.io-client": "^4.7.2",
