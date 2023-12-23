@@ -33,6 +33,13 @@ export class Arena {
         this.body.receiveShadow = true;
         this.position = this.body.position;
     }
+
+    public dispose(){
+        this.geometry.dispose();
+        this.material.dispose();
+        this.position = null;
+    
+    }
 }
 
 const keyCodes = {
@@ -128,6 +135,14 @@ export class Controls {
 
         // console.log(`state for key ${key}: ${this.state.get(key)}`);
         return this.state.get(key);
+    }
+
+    public dispose(){
+        this.keys.clear();
+        this.state.clear();
+
+        this.keys = null;
+        this.state = null;
     }
 }
 
@@ -351,8 +366,6 @@ export class Paddle
     private keydownListener: EventListener;
     private keyupListener: EventListener;
 
-    private cUp: boolean = false;
-    private cDown: boolean = false;
     /**
      * add keyboard controls to the paddle.
      * @param element The element to add the keyboard controls to.
@@ -370,11 +383,10 @@ export class Paddle
 
     /**
      * remove the keyboard controls from the paddle.
-     * @param element The element to remove the keyboard controls from.
     */
-    public removeControle(element: HTMLElement) {
-        element.removeEventListener('keydown', this.keydownListener);
-        element.removeEventListener('keyup', this.keyupListener);
+    public removeControle() {
+        document.removeEventListener('keydown', this.keydownListener);
+        document.removeEventListener('keyup', this.keyupListener);
     }
 
     /**
@@ -408,7 +420,10 @@ export class Paddle
         }
     }
     
-    
+    /**
+     * test the moves of the paddle without emitting the new position to the server.
+     * this is used for testing purposes only.
+     */
     public testMoves(){
         const speed: number = 2;
         // console.log(this.controlSet.up, this.controlSet.down);
@@ -444,6 +459,23 @@ export class Paddle
         socket.on('playerMove', (data)=>{
             this.center.position.set(data.position.x, data.position.y, data.position.z);
         });
+    }
+
+    public dispose(){
+        this.removeControle(document.body);
+        this.geometry.dispose();
+        this.material.dispose();
+        this.center.remove(this.body);
+        this.controls.dispose();
+
+        this.extrudeSettings = null;
+        this.rotation = null;
+        this.center = null;
+        this.body = null;
+        this.controls = null;
+        this.shape = null;
+        this.arenaRef = null;
+        this.controlSet = null;
     }
 
     // checkCollision(ball){
@@ -490,6 +522,12 @@ export class Ball {
     public rotate(){
         this.body.rotation.x += 0.01;
         this.body.rotation.y += 0.01;
+    }
+
+    public dispose(){
+        this.geometry.dispose();
+        this.material.dispose();
+        this.body = null;
     }
 
 }

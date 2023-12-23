@@ -148,11 +148,52 @@ export class Game {
 
     }
 
+    public dispose() {
+
+        this.container.children.forEach((child) => {
+            this.container.remove(child);
+        });
+        this.container = null;
+
+        this.arena.dispose();
+        this.arena = null;
+
+        this.player.dispose();
+        this.player = null;
+
+        this.opponent.dispose();
+        this.opponent = null;
+
+        this.ball.dispose();
+        this.ball = null;
+
+        this.loadingScreen.remove();
+
+        this.HDRILoader = null;
+        this.AudioLoader = null;
+        this.SkinLoader = null;
+        this.audioListener = null;
+
+        this.audio.stop();
+        this.audio.disconnect();
+        this.audio = null;
+
+
+        this.loadingManager.onProgress = null;
+        this.loadingManager.onLoad = null;
+        this.loadingManager = null;
+
+        this.client.removeAllListeners();
+        this.client.disconnect();
+        this.client = null;
+
+        this.scene.dispose();
+        this.scene = null;
+    }
+
     private recieveForfeit() {
         this.client.on("ff", () => {
-            this.scene.dispose();
-            this.client.removeAllListeners();
-            this.client.disconnect();
+            this.dispose();
             console.log("opponent left so you won");
             this.sceneContainer.innerHTML = "<h1>you won</h1>";
         });

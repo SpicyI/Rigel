@@ -10,7 +10,7 @@ export class SceneIDE{
 
     public scene: THREE.Scene;
     public camera: THREE.PerspectiveCamera;
-    public renderer: THREE.WebGLRenderer;
+    public renderer: THREE.WebGLRenderer;	
     public orbit: OrbitControls;
     public light: THREE.DirectionalLight;
     public plane: THREE.Mesh;
@@ -149,6 +149,9 @@ export class SceneIDE{
 		this.renderer.render(this.scene, this.camera);
 	}
 
+
+	private plane_geometry: THREE.PlaneGeometry;
+	private plane_material: THREE.MeshStandardMaterial;
 	/**
 	 * initailize the scene environment
 	 * @param element element to add the canvas
@@ -165,12 +168,12 @@ export class SceneIDE{
 		this.light.castShadow = true;
 		this.light.position.set(100,100,0);
 
-		const plane_skeletone = new THREE.PlaneGeometry(1000,1000);
-		const plane_skin = new THREE.MeshStandardMaterial(
+		this.plane_geometry = new THREE.PlaneGeometry(1000,1000);
+		this.plane_material = new THREE.MeshStandardMaterial(
 			{
 				color: 0x00FFff
 			});
-		this.plane = new THREE.Mesh(plane_skeletone,plane_skin);
+		this.plane = new THREE.Mesh(this.plane_geometry,this.plane_material);
 		this.plane.rotation.x = (-Math.PI / 2) ;
 		this.plane.receiveShadow = true;
 
@@ -224,15 +227,21 @@ export class SceneIDE{
 	 */
 	public dispose(){
 		window.removeEventListener("resize", this.resizeWindowListener);
-		this.renderer.dispose();
+
+		this.scene.children.forEach(child => {
+			this.scene.remove(child);
+		});
 		this.orbit.dispose();
 		this.light.dispose();
-		this.plane.geometry.dispose();
+		
+		this.plane_geometry.dispose();
+		this.plane_material.dispose();
+
 		this.grid.dispose();
-		this.axes.geometry.dispose();
 		this.axes.dispose();
-		this.scene.clear();
-		this.scene.removeFromParent();
+		
+		this.renderer.domElement.parentNode?.removeChild(this.renderer.domElement);
+		this.renderer.dispose();
 
 	}
 }
