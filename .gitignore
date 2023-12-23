@@ -1,5 +1,4 @@
-game/node_modules
-game/dist
-game/.parcel-cache
-gameSockets.tldr
-game/srcs/dist
+.game
+spacePong/game-front-end/.parcel-cache
+spacePong/game-front-end/dist
+spacePong/game-front-end/node_modules
