@@ -462,7 +462,7 @@ export class Paddle
     }
 
     public dispose(){
-        this.removeControle(document.body);
+        this.removeControle();
         this.geometry.dispose();
         this.material.dispose();
         this.center.remove(this.body);
