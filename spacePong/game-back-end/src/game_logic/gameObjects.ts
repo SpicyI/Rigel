@@ -169,6 +169,7 @@ export class Player {
         this.socket.to(this.lobby).emit('playerMove', { position: this.position });
     }
 
+
     /**
      * emmit the innitial player position to the player.
      */
@@ -220,6 +221,12 @@ export class Player {
             this.position.set(arena.width / -2, 0, 0);
         else if (this.side == 'right')
             this.position.set(arena.width / 2, 0, 0);
+    }
+
+    public FF(): void {
+        if (this.socket === undefined)
+            return;
+        this.socket.to(this.lobby).emit('ff');
     }
 
 }

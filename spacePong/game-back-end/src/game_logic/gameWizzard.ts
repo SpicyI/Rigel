@@ -134,7 +134,7 @@ export class Game {
     /**
      * the game loop.
      */
-    gameLoop() {
+    private gameLoop() {
         let lastTime: number = Date.now();
 
         this.interval = setInterval(() => {
@@ -161,12 +161,32 @@ export class Game {
         console.log('game finished');
     }
 
+    /**
+     * closes the game.
+     */
+
+
+    public forfeit(playerSocketId: string) {
+        if (this.interval)
+            clearInterval(this.interval);
+
+        if (this.playerL.socket.id == playerSocketId) {
+            this.playerL.FF();
+        }
+        else if (this.playerR.socket.id == playerSocketId){
+            this.playerR.FF();
+        }
+        this.finish();
+    }
+
+
 
 }
 
 export type playerInfo = {
     playerSocket: any,
-    isReady: boolean
+    isReady: boolean,
+    inGame: boolean
 }
 
 export type sideSet = {
@@ -218,7 +238,7 @@ export class lobby {
         if (this.players.size == 2)
             throw new Error('lobby is full');
 
-        this.players.set({ playerSocket: clientToAdd, isReady: false }, null);
+        this.players.set({ playerSocket: clientToAdd, isReady: false , inGame: false}, null);
 
         clientToAdd.on('playerReady', (socketID: string) => {
             this.setReady(socketID);
@@ -247,6 +267,7 @@ export class lobby {
             newPlayer.mountSocket(key.playerSocket, this.id);
             this.players.set(key, newPlayer);
             key.playerSocket.join(this.id);
+            key.inGame = true;
             i++;
         });
 
@@ -277,6 +298,30 @@ export class lobby {
             console.log('confirmed - starting game ')
             this.setupGame();
         }
+
+    }
+
+
+    public removePlayer(clientToRemove: Socket) {
+
+        this.players.forEach((value, key) => {
+            if (key.playerSocket && key.playerSocket.id == clientToRemove.id) {
+                if (key.inGame) {
+                    // remove player from game and finish game
+
+                    this.game.forfeit(clientToRemove.id);
+                    this.players.clear();
+                    this.game = null;
+                }
+                else {
+                    this.players.clear();
+                    this.game = null;
+                    // update opponent that player left
+                    clientToRemove.to(this.id).emit('ff');
+
+                }
+            }
+        });
 
     }
 }

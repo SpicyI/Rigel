@@ -104,6 +104,7 @@ export class Controls {
      * @param e The KeyboardEvent object representing the key down event.
      */
     public OnkeyDown(e: KeyboardEvent) {
+        console.log(e.key);
         if (this.state.has(e.key))
             this.state.set(e.key, true);
     }
@@ -113,6 +114,7 @@ export class Controls {
      * @param e The KeyboardEvent object representing the key up event.
      */
     public OnkeyUP(e: KeyboardEvent) {
+        console.log(e.key);
         if (this.state.has(e.key))
             this.state.set(e.key, false);
     }

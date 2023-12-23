@@ -148,6 +148,18 @@ export class Game {
 
     }
 
+    private recieveForfeit() {
+        this.client.on("ff", () => {
+            this.scene.dispose();
+            this.client.removeAllListeners();
+            this.client.disconnect();
+            console.log("opponent left so you won");
+            this.sceneContainer.innerHTML = "<h1>you won</h1>";
+        });
+
+
+    }
+
 
     private start() {
         this.client.on("startGame", () => {
@@ -241,69 +253,70 @@ export class Game {
 
     launch() {
         this.queueUp();
-        this.receiveGameId(); 
+        this.receiveGameId();
+        this.recieveForfeit();
     }
 
 }
 
 
+// ! main fn is for test proposes only
+// export function main(Element: HTMLElement) {
 
-export function main(Element: HTMLElement) {
+//     let prog = new LoadingScreen();
+//     Element.appendChild(prog.getLoadingScreen());
+//     const loadmanager = new THREE.LoadingManager();
+//     loadmanager.onProgress = (url, itemsLoaded, itemsTotal) => {
+//         prog.updateProgress(itemsLoaded / itemsTotal * 100);
+//     };
 
-    let prog = new LoadingScreen();
-    Element.appendChild(prog.getLoadingScreen());
-    const loadmanager = new THREE.LoadingManager();
-    loadmanager.onProgress = (url, itemsLoaded, itemsTotal) => {
-        prog.updateProgress(itemsLoaded / itemsTotal * 100);
-    };
+//     loadmanager.onLoad = () => {
+//         prog.hide();
+//     }
 
-    loadmanager.onLoad = () => {
-        prog.hide();
-    }
+//     let scene = new Scene();
+//     const HDRI = new RGBELoader(loadmanager);
 
-    let scene = new Scene();
-    const HDRI = new RGBELoader(loadmanager);
+//     HDRI.load("../../assets/HDRS/nebula3.hdr", (texture) => {
+//         texture.mapping = THREE.EquirectangularReflectionMapping;
+//         scene.scene.background = texture;
+//     });
 
-    HDRI.load("../../assets/HDRS/nebula3.hdr", (texture) => {
-        texture.mapping = THREE.EquirectangularReflectionMapping;
-        scene.scene.background = texture;
-    });
+//     scene.init(Element);
+//     let container = new THREE.Object3D();
+//     container.position.set(0, 0, 0);
 
-    scene.init(Element);
-    let container = new THREE.Object3D();
-    container.position.set(0, 0, 0);
+//     let ball = new Ball(2, 0xffffff);
+//     ball.setPos(0, 3, 0);
 
-    let ball = new Ball(2, 0xffffff);
-    ball.setPos(0, 3, 0);
+//     let arena = new Arena(200, 3/4);
+//     let player = new Paddle(undefined, 1, 3,0x00ff00);
+//     let opponent = new Paddle(undefined, 1, 3, 0x0000ff);
 
-    let arena = new Arena(200, 3/4);
-    let player = new Paddle(undefined, 1, 3,0x00ff00);
-    let opponent = new Paddle(undefined, 1, 3, 0x0000ff);
+//     player.addArena(arena);
 
-    player.addArena(arena);
-
-    player.center.position.set(-100,0,0 );
-    opponent.setPos(100, 0, 0);
-    container.add(arena.body, player.center, opponent.center, ball.body);
+//     player.center.position.set(-100,0,0 );
+//     opponent.setPos(100, 0, 0);
+//     container.add(arena.body, player.center, opponent.center, ball.body);
     
-    player.addControle(Element);
-    scene.scene.add(container);
+//     player.addControle(Element);
+//     scene.scene.add(container);
 
-    scene.renderer.setAnimationLoop(() => {
-        scene.render();
-        player.testMoves();
-        ball.rotate();
-    });
+//     scene.renderer.setAnimationLoop(() => {
+//         scene.render();
+//         player.testMoves();
+//         ball.rotate();
+//     });
 
 
 
-}
+// }
 
 
 
 export default {
-    Game,
+    // main,
     LoadingScreen,
-    main
+    Game,
 }
 

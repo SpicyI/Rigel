@@ -231,6 +231,9 @@ export class SceneIDE{
 		this.grid.dispose();
 		this.axes.geometry.dispose();
 		this.axes.dispose();
+		this.scene.clear();
+		this.scene.removeFromParent();
+
 	}
 }
 
