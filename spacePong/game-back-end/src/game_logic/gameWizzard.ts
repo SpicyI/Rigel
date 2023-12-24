@@ -45,6 +45,8 @@ export class Game {
         let isWinner: boolean = this.ball.position.x > 0 ? this.playerL.addScore() : this.playerR.addScore();
         if (isWinner) {
             this.finish();
+            // stop excution here
+            return;
         }
 
         this.playerL.reset(this.arena);
@@ -160,6 +162,15 @@ export class Game {
     * finishes the game.
     */
     finish() {
+        if (this.playerL.isWinner) {
+            this.playerL.win();
+            this.playerR.lose();
+        }
+        else {
+            this.playerR.win();
+            this.playerL.lose();
+        }
+
         console.log('game finished');
     }
 

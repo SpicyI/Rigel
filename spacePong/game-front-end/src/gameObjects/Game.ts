@@ -200,10 +200,26 @@ export class Game {
         this.client.on("ff", () => {
             this.dispose();
             console.log("opponent left so you won");
-            this.sceneContainer.innerHTML = "<h1>you won</h1>";
+            this.sceneContainer.innerHTML = "<h1>you won by forfiet</h1>";
         });
 
 
+    }
+
+    private receiveWin() {
+        this.client.on("win", () => {
+            this.dispose();
+            console.log("you won");
+            this.sceneContainer.innerHTML = "<h1>you won</h1>";
+        });
+    }
+
+    private receiveLose() {
+        this.client.on("lose", () => {
+            this.dispose();
+            console.log("you lost");
+            this.sceneContainer.innerHTML = "<h1>you lost</h1>";
+        });
     }
 
 
@@ -217,9 +233,9 @@ export class Game {
             this.opponent.receiveMoves(this.client);
             this.ball.receiveMoves(this.client);
             this.scene.scene.add(this.container);
+            console.log(this.audio.isPlaying);
             this.scene.renderer.setAnimationLoop(() => {
                 this.gameLoop();
-                console.log("game is running")
             });
         });
         // this.loadingScreen.hide();
@@ -271,7 +287,6 @@ export class Game {
             this.audio.setBuffer(buffer);
             this.audio.setLoop(true);
             this.audio.setVolume(0.5);
-            this.audio.pause();
         });
 
     }
@@ -302,6 +317,8 @@ export class Game {
         this.queueUp();
         this.receiveGameId();
         this.recieveForfeit();
+        this.receiveWin();
+        this.receiveLose();
     }
 
 }

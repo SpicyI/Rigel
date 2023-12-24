@@ -114,6 +114,7 @@ export class Player {
     public Score: number;
     public socket: Socket;
     public lobby: string;
+    public isWinner: boolean;
 
     /**
      * Creates a new Player instance.
@@ -136,6 +137,7 @@ export class Player {
         this.speed = set.speed || 2;
 
         this.Score = 0;
+        this.isWinner = false;
     }
 
     /**
@@ -214,10 +216,31 @@ export class Player {
      */
     public addScore(): boolean {
         this.Score++;
-        if (this.Score == winScore)
+        if (this.Score == winScore){
+            this.isWinner = true;
             return true;
+        }
         return false;
     }
+
+    /**
+     * emitts a win event to the current player.
+     */
+    public win(): void {
+        if (this.socket === undefined)
+            return;
+        this.socket.emit('win');
+    }
+
+    /**
+     * emitts a lose event to the current player.
+     */
+    public lose(): void {
+        if (this.socket === undefined)
+            return;
+        this.socket.emit('lose');
+    }
+    
     /**
      * resets the player position to the middle of the arena.
      * @param {arena} arena - The arena to reset the player in.

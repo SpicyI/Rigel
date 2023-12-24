@@ -25,6 +25,7 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect{
   @WebSocketServer()
   private server: Server;
 
+
   private removeFromGame(client: Socket) {
 
     // remove from queue

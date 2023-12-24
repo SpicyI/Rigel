@@ -4,7 +4,7 @@
   "description": "",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start:dev": "(npx parcel src/index.html) & npx parcel watch src/index.html"
+    "start:dev": "parcel src/index.html"
   },
   "keywords": [],
   "author": "",
