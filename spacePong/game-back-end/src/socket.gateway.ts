@@ -26,14 +26,18 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect{
   private server: Server;
 
   private removeFromGame(client: Socket) {
+
+    // remove from queue
     if (this.queue.delete(client.id)) {
         console.log(`removing ${client.id} from queue`);
         // cleanup client
+        client.offAny();
         client._cleanup();
         client.removeAllListeners();
         // distroy socket
         client.disconnect(true);
-    }
+    } 
+    // remove from lobby
     else {
       if (this.playersLobby.has(client.id)) {
         console.log(`removing ${client.id} from lobby`);
@@ -41,9 +45,12 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect{
         if (lobby == undefined)
             return;
         lobby.removePlayer(client);
+        this.lobbies.delete(lobby.id);
+        lobby.dispose();
         this.playersLobby.delete(client.id);
 
         // cleanup client
+        client.offAny();
         client._cleanup();
         client.removeAllListeners();
         // distroy socket
@@ -56,10 +63,23 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect{
  
   handleConnection(client: Socket) {
     console.log('\x1b[32m',`new connection from ${client.id}`,'\x1b[37m');
+    this.server.sockets.sockets.forEach((value, key) => {
+      console.log('\x1b[33m',`connected clients: ${key}`,'\x1b[37m');
+    });
   }
 
   handleDisconnect(client: Socket) {
     this.removeFromGame(client);
+    // list all connected clients
+    this.server.sockets.sockets.forEach((value, key) => {
+      console.log('\x1b[31m',`connected clients: ${key}`,'\x1b[37m');
+    });
+
+    // list all lobbies
+    console.log('\x1b[35m',`lobbies: `,'\x1b[37m');
+    this.lobbies.forEach((value, key) => {
+      console.log('\x1b[35m',`lobby: ${key}`,'\x1b[37m');
+    });
     
   }
 

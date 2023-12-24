@@ -91,6 +91,12 @@ export class ball {
         this.direction.applyQuaternion(this.quaternion);
     }
 
+    public dispose() {
+        delete this.position;
+        delete this.direction;
+        delete this.quaternion;
+    }
+
 
 }
 
@@ -227,6 +233,10 @@ export class Player {
         if (this.socket === undefined)
             return;
         this.socket.to(this.lobby).emit('ff');
+    }
+
+    public dispose() {
+        delete this.position;
     }
 
 }

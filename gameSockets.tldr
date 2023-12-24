@@ -66,9 +66,9 @@
     {
       "id": "pointer:pointer",
       "typeName": "pointer",
-      "x": -92.93834297102507,
-      "y": 3574.0884297534685,
-      "lastActivityTimestamp": 1703335588845,
+      "x": -93.23162030855178,
+      "y": 3378.74145198287,
+      "lastActivityTimestamp": 1703407478586,
       "meta": {}
     },
     {
@@ -79,9 +79,9 @@
       "typeName": "page"
     },
     {
-      "x": 561.4374569984575,
-      "y": -3339.1437701966847,
-      "z": 1.4386366586822077,
+      "x": 707.3223575050043,
+      "y": -2914.804562752948,
+      "z": 1.0389344136873029,
       "meta": {},
       "id": "camera:page:page",
       "typeName": "camera"
@@ -89,8 +89,10 @@
     {
       "editingShapeId": null,
       "croppingShapeId": null,
-      "selectedShapeIds": [],
-      "hoveredShapeId": null,
+      "selectedShapeIds": [
+        "shape:mUIdh8nY40nHX-MsqN_WO"
+      ],
+      "hoveredShapeId": "shape:mUIdh8nY40nHX-MsqN_WO",
       "erasingShapeIds": [],
       "hintingShapeIds": [],
       "focusedGroupId": null,
@@ -104,8 +106,8 @@
       "opacityForNextShape": 1,
       "stylesForNextShape": {
         "tldraw:geo": "rectangle",
-        "tldraw:color": "black",
-        "tldraw:dash": "solid",
+        "tldraw:color": "red",
+        "tldraw:dash": "dotted",
         "tldraw:fill": "none"
       },
       "brush": {
@@ -116,7 +118,7 @@
       },
       "scribbles": [],
       "cursor": {
-        "type": "default",
+        "type": "cross",
         "rotation": 0
       },
       "isFocusMode": false,
@@ -126,8 +128,8 @@
       "screenBounds": {
         "x": 0,
         "y": 0,
-        "w": 1479,
-        "h": 836
+        "w": 1446,
+        "h": 819
       },
       "zoomBrush": null,
       "isGridMode": false,
@@ -1891,6 +1893,45 @@
       "parentId": "page:page",
       "index": "aU",
       "id": "shape:mAoH83EZqUHI_ZQYGmkMe",
+      "typeName": "shape"
+    },
+    {
+      "x": -395.4643655745175,
+      "y": 3372.966303984157,
+      "rotation": 0,
+      "isLocked": false,
+      "opacity": 1,
+      "meta": {},
+      "id": "shape:mUIdh8nY40nHX-MsqN_WO",
+      "type": "line",
+      "parentId": "page:page",
+      "index": "aV",
+      "props": {
+        "dash": "dotted",
+        "size": "m",
+        "color": "red",
+        "spline": "line",
+        "handles": {
+          "start": {
+            "id": "start",
+            "type": "vertex",
+            "canBind": false,
+            "canSnap": true,
+            "index": "a1",
+            "x": 0,
+            "y": 0
+          },
+          "end": {
+            "id": "end",
+            "type": "vertex",
+            "canBind": false,
+            "canSnap": true,
+            "index": "a2",
+            "x": 302.2327452659657,
+            "y": 5.775147998712782
+          }
+        }
+      },
       "typeName": "shape"
     }
   ]

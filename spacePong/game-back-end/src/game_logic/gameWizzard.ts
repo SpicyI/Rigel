@@ -1,3 +1,4 @@
+import { clearTimeout } from 'timers';
 import {ball , Player, arena} from './gameObjects';
 import { Vector3, customRand } from './math'
 import { Socket, Server } from 'socket.io';
@@ -128,7 +129,9 @@ export class Game {
 
         this.ball.emitPOS();
 
-        this.gameLoop();
+        setTimeout(() => {
+            this.gameLoop();
+        }, 2000);
     }
 
     /**
@@ -141,7 +144,6 @@ export class Game {
             const currentTime: number = Date.now();
             const deltaTime: number = (currentTime - lastTime) / 1000; // Convert to seconds
 
-            // wait 5 sec before start
 
             this.playerR.emitPOS();
             this.playerL.emitPOS();
@@ -161,11 +163,6 @@ export class Game {
         console.log('game finished');
     }
 
-    /**
-     * closes the game.
-     */
-
-
     public forfeit(playerSocketId: string) {
         if (this.interval)
             clearInterval(this.interval);
@@ -177,6 +174,15 @@ export class Game {
             this.playerR.FF();
         }
         this.finish();
+    }
+
+    public dispose() {
+        this.playerL.dispose();
+        this.playerR.dispose();
+        this.ball.dispose();
+        if (this.interval)
+            clearInterval(this.interval);
+
     }
 
 
@@ -302,20 +308,34 @@ export class lobby {
     }
 
 
+    public dispose() {
+        this.players.forEach((value, key) => {
+            if (key.playerSocket) {
+                key.playerSocket.leave(this.id);
+            }
+        });
+        this.players.clear();
+        if (this.game)
+            this.game.dispose();
+        this.game = null;
+        delete this.sides;
+        delete this.ball;
+        delete this.arena;
+    }
+
+    /**
+     * removes a player from the lobby.
+     * @param {Socket} clientToRemove - The socket of the player to remove.
+     */
     public removePlayer(clientToRemove: Socket) {
 
         this.players.forEach((value, key) => {
             if (key.playerSocket && key.playerSocket.id == clientToRemove.id) {
                 if (key.inGame) {
                     // remove player from game and finish game
-
                     this.game.forfeit(clientToRemove.id);
-                    this.players.clear();
-                    this.game = null;
                 }
                 else {
-                    this.players.clear();
-                    this.game = null;
                     // update opponent that player left
                     clientToRemove.to(this.id).emit('ff');
 

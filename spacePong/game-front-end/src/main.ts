@@ -1,14 +1,13 @@
 import { Game } from "./gameObjects/Game";
 
+let startButton = document.getElementById("start-button");
 let GameContainer = document.getElementById("game-container");
-if (GameContainer) {
+
+
+startButton.addEventListener("click", () => {
     let game = new Game(GameContainer);
-    console.log("launching the game");
     game.launch();
-}
-else{
-    console.log("Game container not found");
-}
+});
 
 
 // import { main } from "./gameObjects/Game";

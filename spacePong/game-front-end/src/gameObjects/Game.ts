@@ -183,6 +183,11 @@ export class Game {
         this.loadingManager.onLoad = null;
         this.loadingManager = null;
 
+        this.client.off("startGame");
+        this.client.off("initPlayer");
+        this.client.off("ff");
+        this.client.off("gameId");
+        this.client.off("connect");
         this.client.removeAllListeners();
         this.client.disconnect();
         this.client = null;
@@ -213,7 +218,8 @@ export class Game {
             this.ball.receiveMoves(this.client);
             this.scene.scene.add(this.container);
             this.scene.renderer.setAnimationLoop(() => {
-                this.gameLoop(); 
+                this.gameLoop();
+                console.log("game is running")
             });
         });
         // this.loadingScreen.hide();
