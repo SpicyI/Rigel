@@ -180,9 +180,9 @@ export class Paddle
     public extrudeSettings: extrudeSettings;
     public width: number;
     public length: number;
-    public geometry: THREE.ExtrudeGeometry;
-    public material: THREE.MeshStandardMaterial;
-    public body: THREE.Mesh;
+    // public geometry: THREE.ExtrudeGeometry;
+    // public material: THREE.MeshStandardMaterial;
+    // public body: THREE.Mesh;
     public center: THREE.Object3D;
     public position: THREE.Vector3;
     public rotation: THREE.Euler;
@@ -220,20 +220,20 @@ export class Paddle
         this.controls = new Controls();
         
         
-        this.geometry = new THREE.ExtrudeGeometry(this.shape,  extrudeSettings);
-        this.material = new THREE.MeshStandardMaterial({color: clr});
-        this.body = new THREE.Mesh(this.geometry, this.material);
+        // this.geometry = new THREE.ExtrudeGeometry(this.shape,  extrudeSettings);
+        // this.material = new THREE.MeshStandardMaterial({color: clr});
+        // this.body = new THREE.Mesh(this.geometry, this.material);
         
-        this.body.position.z = -(this.extrudeSettings.depth / 2);
-        this.body.position.y = this.extrudeSettings.bevelSize;
-        this.body.position.x =  -(this.length / 2)
-        this.body.castShadow = true;
+        // this.body.position.z = -(this.extrudeSettings.depth / 2);
+        // this.body.position.y = this.extrudeSettings.bevelSize;
+        // this.body.position.x =  -(this.length / 2)
+        // this.body.castShadow = true;
         
         
         
         this.center = new THREE.Object3D();
         this.center.position.set(0, 0, 0);
-        this.center.add(this.body);
+        // this.center.add(this.body);
 
         
         this.position = this.center.position;
@@ -289,14 +289,14 @@ export class Paddle
         {
             this.extrudeSettings = extrudeSettings;
             this.depth = extrudeSettings.depth / 2;
-            this.body.position.z = -(this.extrudeSettings.depth / 2);
+            // this.body.position.z = -(this.extrudeSettings.depth / 2);
 
-            this.body.geometry.dispose();
-            this.geometry.dispose();
+            // this.body.geometry.dispose();
+            // this.geometry.dispose();
 
-            this.shape = this.createPaddleShape(this.length,this.width);
-            this.geometry = new THREE.ExtrudeGeometry(this.shape,  extrudeSettings);
-            this.body.geometry = this.geometry;
+            // this.shape = this.createPaddleShape(this.length,this.width);
+            // this.geometry = new THREE.ExtrudeGeometry(this.shape,  extrudeSettings);
+            // this.body.geometry = this.geometry;
         }
     }
 
@@ -308,8 +308,8 @@ export class Paddle
 
     public setShadows(cast: boolean = false, receive: boolean = false)
     {
-        this.body.castShadow = cast;
-        this.body.receiveShadow = receive;
+        // this.body.castShadow = cast;
+        // this.body.receiveShadow = receive;
     }
 
 
@@ -348,19 +348,18 @@ export class Paddle
 
     /**
      * set the side of the arena the paddle is on.
-     * @param arena The arena the paddle belongs to.
      * @param side The side of the arena the paddle is on.
      * @deprecated
      */
-    public setSide(arena: Arena, side: string = 'right'){
+    public setSide(side: string = 'right'){
 
-        const  x: number =  arena.position.x + (side === 'left' ? -arena.size / 2 : arena.size / 2); 
-        const  z: number = arena.position.z;
-        const  y: number = arena.position.y;
+        // const  x: number =  arena.position.x + (side === 'left' ? -arena.size / 2 : arena.size / 2); 
+        // const  z: number = arena.position.z;
+        // const  y: number = arena.position.y;
 
-        this.center.position.set(x, y, z);
+        // this.center.position.set(x, y, z);
         this.side = side;
-        this.addArena(arena);
+        // this.addArena(arena);
     }
 
     private keydownListener: EventListener;
@@ -379,6 +378,10 @@ export class Paddle
 
         document.addEventListener('keydown', this.keydownListener);
         document.addEventListener('keyup', this.keyupListener);
+    }
+
+    public setControlSet(controlSet: {up: string, down: string}){
+        this.controlSet = controlSet;
     }
 
     /**
@@ -415,7 +418,7 @@ export class Paddle
             let lowerEdge: number = this.center.position.z + this.extrudeSettings.depth / 2;
             if (lowerEdge + speed <= (this.arenaRef.height / 2)){
                 this.center.position.z += speed;
-                    socket.emit('playerMove', {position: this.center.position, rotation: this.center.rotation});
+                socket.emit('playerMove', {position: this.center.position, rotation: this.center.rotation});
             }
         }
     }
@@ -457,21 +460,22 @@ export class Paddle
      */
     public receiveMoves(socket: Socket){
         socket.on('playerMove', (data)=>{
-            this.center.position.set(data.position.x, data.position.y, data.position.z);
+            // this.center.position.set(data.position.x, data.position.y, data.position.z);
+            this.center.position.lerp(new THREE.Vector3(data.position.x, data.position.y, data.position.z), 0.05);
         });
     }
 
     public dispose(){
         this.removeControle();
-        this.geometry.dispose();
-        this.material.dispose();
-        this.center.remove(this.body);
+        // this.geometry.dispose();
+        // this.material.dispose();
+        // this.center.remove(this.body);
         this.controls.dispose();
 
         this.extrudeSettings = null;
         this.rotation = null;
         this.center = null;
-        this.body = null;
+        // this.body = null;
         this.controls = null;
         this.shape = null;
         this.arenaRef = null;
@@ -497,15 +501,16 @@ export class Paddle
 
 export class Ball {
     private reduis: number;
-    private geometry: THREE.SphereGeometry;
-    private material: THREE.MeshStandardMaterial;
-    public body : THREE.Mesh;
+    // private geometry: THREE.SphereGeometry;
+    // private material: THREE.MeshStandardMaterial;
+    public body : THREE.Object3D;
 
     constructor(reduis: number = 1, color: number = 0xff0000){
         this.reduis = reduis;
-        this.geometry = new THREE.SphereGeometry(this.reduis, 32, 64);
-        this.material = new THREE.MeshStandardMaterial({color: color});
-        this.body = new THREE.Mesh(this.geometry, this.material);
+        // this.geometry = new THREE.SphereGeometry(this.reduis, 32, 64);
+        // this.material = new THREE.MeshStandardMaterial({color: color});
+        // this.body = new THREE.Mesh(this.geometry, this.material);
+        this.body = new THREE.Object3D();
         this.body.castShadow = true;
     }
 
@@ -515,7 +520,8 @@ export class Ball {
 
     public  receiveMoves(socket: Socket){
         socket.on('ballMove', (data)=>{
-            this.body.position.copy(data.position);
+            // this.body.position.copy(data.position);
+            this.body.position.lerp(new THREE.Vector3(data.position.x,data.position.y,data.position.z),0.05);
         });
     }
 
@@ -525,8 +531,8 @@ export class Ball {
     }
 
     public dispose(){
-        this.geometry.dispose();
-        this.material.dispose();
+        // this.geometry.dispose();
+        // this.material.dispose();
         this.body = null;
     }
 

@@ -177,7 +177,7 @@ export class SceneIDE{
 		this.plane.rotation.x = (-Math.PI / 2) ;
 		this.plane.receiveShadow = true;
 
-		this.camera.position.set(0, 20,50);
+		this.camera.position.set(0, 50, 150);
 		this.camera.lookAt(new THREE.Vector3(0, 0, 0));
 
 		this.add(this.light);

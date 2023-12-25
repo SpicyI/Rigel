@@ -1,3 +1,4 @@
+
 import {customRand, Vector3, Quaternion} from "./math";
 import { Socket, Server } from 'socket.io';
 
@@ -24,13 +25,13 @@ export class ball {
      * @param {number} [speed=50] - The speed of the ball.
      * @param {number} [radius=2] - The radius of the ball.
      * */
-    constructor(position: Vector3 = new Vector3(0, 3, 0), speed: number = 50, radius: number = 2) {
+    constructor(position: Vector3 = new Vector3(0, 3, 0), speed: number = 85, radius: number = 2) {
         this.position = position;
         this.speed = speed;
         this.radius = radius;
         this.direction = new Vector3(0, 0, 0);
         this.quaternion = new Quaternion();
-        this.quaternion.set(new Vector3(0, 1, 0), customRand.degToRad(10));
+        this.quaternion.set(new Vector3(0, 1, 0), customRand.degToRad(20));
     }
 
     /**
@@ -64,8 +65,9 @@ export class ball {
      * increases the ball speed by 5 each time till it reaches 110.
      */
     public increseSpeed() {
-        if (this.speed < 110)
-            this.speed += 5;
+        console.log(`speed is: ${this.speed}`);
+        if (this.speed + 20 <= 180)
+            this.speed += 20;
     }
 
     /**
@@ -73,7 +75,7 @@ export class ball {
      */
     public reset() {
         this.position.set(0, 3, 0);
-        this.speed = 50;
+        this.speed = 85;
     }
 
     /**
@@ -184,7 +186,7 @@ export class Player {
     public echoPos() {
         if (this.socket === undefined)
             return;
-        this.socket.emit('initPlayer', this.position);
+        this.socket.emit('initPlayer', {pos: this.position, side: this.side});
     }
 
     /**
@@ -259,6 +261,7 @@ export class Player {
     }
 
     public dispose() {
+        this.socket.offAny();
         delete this.position;
     }
 
@@ -290,8 +293,14 @@ export class arena {
      * @returns {string} 'bounce' if the ball collides with the arena hieght, 'goal' if the ball collides with the arena width, 'none' if no collision detected.
      */
     public checkCollision(ball: ball): string {
-        if (ball.position.z > this.hieght / 2 || ball.position.z < - this.hieght / 2)
+        if (ball.position.z > this.hieght / 2){
+            ball.position.z = this.hieght / 2;
             return 'bounce';
+        }
+        else if (ball.position.z < - this.hieght / 2){
+            ball.position.z = - this.hieght / 2;
+            return 'bounce';
+        }
         else if (ball.position.x > this.width / 2 || ball.position.x < - this.width / 2)
             return 'goal';
         return 'none';

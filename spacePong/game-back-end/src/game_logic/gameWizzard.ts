@@ -13,6 +13,8 @@ export class Game {
     public ball: ball;
     public arena: arena;
     public interval: any;
+    public io: Server;
+    public id: string;
 
     /**
      * Creates a new Game instance.
@@ -20,14 +22,17 @@ export class Game {
      * @param {Player[]} players - The players in the game.
      * @param {ball} ball - The ball in the game.
      * @param {arena} arena - The arena in the game.
+     * @param {Server} io - The socketIo server instance.
+     * @param {string} id - The id of the game.
      * @throws {Error} Invalid number of players.
      */
 
-    constructor(players: Player[], ball: ball, arena: arena) {
+    constructor(players: Player[], ball: ball, arena: arena, io: Server, id: string) {
 
         if (players.length != 2)
             throw new Error('invalid number of players');
-
+        this.io = io;
+        this.id = id;
         this.playerL = players[0]; // left player
         this.playerR = players[1]; // right player
         this.ball = ball;
@@ -49,6 +54,8 @@ export class Game {
             return;
         }
 
+        this.io.to(this.id).emit('score', { left: this.playerL.Score, right: this.playerR.Score});
+
         this.playerL.reset(this.arena);
         this.playerR.reset(this.arena);
         this.ball.reset();
@@ -60,7 +67,7 @@ export class Game {
     /**
      * checks if the ball collides with a player and handles the collision.
      */
-    public checkplayersCollision() {
+    public checkplayersCollision(): boolean{
         if (this.playerL.checkCollision(this.ball)) {
 
             if (this.ball.position.z > this.playerL.position.z) {
@@ -74,7 +81,9 @@ export class Game {
             else {
                 this.ball.direction.x *= -1;
             }
+            this.ball.position.x = this.playerL.position.x + this.playerL.width; 
             this.ball.increseSpeed();
+            return true;
         }
         else if (this.playerR.checkCollision(this.ball)) {
 
@@ -89,8 +98,11 @@ export class Game {
             else {
                 this.ball.direction.x *= -1;
             }
+            this.ball.position.x = this.playerR.position.x - this.playerR.width;
             this.ball.increseSpeed();
+            return true;
         }
+        return false;
     }
 
     /**
@@ -98,6 +110,8 @@ export class Game {
      * in case of a goal the score is handled.
      */
     public checkCollision() {
+        if (this.checkplayersCollision())
+            return;
         let arenaCollision = this.arena.checkCollision(this.ball);
         switch (arenaCollision) {
             case 'bounce':
@@ -107,7 +121,7 @@ export class Game {
                 this.Score();
                 break;
             default:
-                this.checkplayersCollision();
+                // this.checkplayersCollision();
                 break;
         }
 
@@ -117,9 +131,10 @@ export class Game {
      * starts the game loop.
      */
 
+    private timeOutId: NodeJS.Timeout | null = null;
     public start() {
         this.ball.setDirection(new Vector3(customRand.randInt() % 2 ? 1 : -1, 0, 0).normalize());
-
+        
         this.playerL.echoPos();
         this.playerR.echoPos();
 
@@ -131,7 +146,7 @@ export class Game {
 
         this.ball.emitPOS();
 
-        setTimeout(() => {
+        this.timeOutId = setTimeout(() => {
             this.gameLoop();
         }, 2000);
     }
@@ -146,16 +161,18 @@ export class Game {
             const currentTime: number = Date.now();
             const deltaTime: number = (currentTime - lastTime) / 1000; // Convert to seconds
 
-
+            console
+            this.ball.emitPOS();
             this.playerR.emitPOS();
             this.playerL.emitPOS();
-            this.ball.emitPOS();
-            this.checkCollision();
             this.ball.position.add(this.ball.direction.clone().multiplyScalar(this.ball.speed * deltaTime));
-            // this.ball.emitPOS();
+            this.checkCollision();
+            this.ball.emitPOS();
+            this.playerR.emitPOS();
+            this.playerL.emitPOS();
 
             lastTime = currentTime;
-        }, 1000 / 120);
+        }, 1000 / 160);
 
     }
     /**
@@ -170,13 +187,13 @@ export class Game {
             this.playerR.win();
             this.playerL.lose();
         }
-
+        this.dispose();
         console.log('game finished');
     }
 
     public forfeit(playerSocketId: string) {
-        if (this.interval)
-            clearInterval(this.interval);
+
+        clearInterval(this.interval);
 
         if (this.playerL.socket.id == playerSocketId) {
             this.playerL.FF();
@@ -188,12 +205,13 @@ export class Game {
     }
 
     public dispose() {
+        if (this.timeOutId)
+            clearTimeout(this.timeOutId);
+        if (this.interval)
+            clearInterval(this.interval);
         this.playerL.dispose();
         this.playerR.dispose();
         this.ball.dispose();
-        if (this.interval)
-            clearInterval(this.interval);
-
     }
 
 
@@ -290,7 +308,7 @@ export class lobby {
 
         let playerArr: Player[] | any = [...this.players.values()];
 
-        this.game = new Game(playerArr, this.ball, this.arena);
+        this.game = new Game(playerArr, this.ball, this.arena, this.io, this.id);
 
         this.io.to(this.id).emit('startGame');
         this.game.start();
@@ -342,15 +360,13 @@ export class lobby {
 
         this.players.forEach((value, key) => {
             if (key.playerSocket && key.playerSocket.id == clientToRemove.id) {
-                if (key.inGame) {
+
                     // remove player from game and finish game
                     this.game.forfeit(clientToRemove.id);
-                }
-                else {
-                    // update opponent that player left
-                    clientToRemove.to(this.id).emit('ff');
-
-                }
+                    clientToRemove.offAny();
+                    this.game.dispose();
+                    delete this.game;
+                    this.game = null
             }
         });
 

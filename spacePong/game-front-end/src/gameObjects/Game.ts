@@ -1,4 +1,3 @@
-import { ball } from './../../../game-back-end/src/game_logic/gameObjects';
 
 import {SceneIDE as Scene} from "./Scene";
 import { Paddle, Arena , Controls, Ball} from "./objects";
@@ -6,12 +5,97 @@ import * as THREE from 'three';
 import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader";
 import {io} from "socket.io-client";
 import { Socket } from 'socket.io-client';
+import {GLTFLoader} from "three/examples/jsm/loaders/GLTFLoader";
+
+import {CSS2DRenderer, CSS2DObject} from "three/examples/jsm/renderers/CSS2DRenderer";
 
 const skybox = new URL('../../assets/HDRs/nebula3.hdr', import.meta.url);
 const ballSkin = new URL('../../assets/imgs/sky.jpg', import.meta.url);
 const ost = new URL('../../assets/audio/ost.mp3', import.meta.url);
+const ball = new URL('../../assets/GLBs/blackhole.glb', import.meta.url);
+const spaceStation = new URL('../../assets/GLBs/space_station.glb', import.meta.url);
+const galaxy = new URL('../../assets/GLBs/galaxy.glb', import.meta.url);
+
+export class ScoreBorad {
+
+    private Renderer: CSS2DRenderer;
+    private resizeEvent: EventListener;
+
+    private player1Score: HTMLDivElement;
+    private player2Score: HTMLDivElement;
+
+    public label1: CSS2DObject;
+    public label2: CSS2DObject;
+
+    constructor() {
+        this.Renderer = new CSS2DRenderer();
+        this.Renderer.setSize(window.innerWidth, window.innerHeight);
+        this.Renderer.domElement.style.position = 'absolute';
+        this.Renderer.domElement.style.top = '0px';
+        this.Renderer.domElement.style.pointerEvents = 'none';
+
+        this.resizeEvent = () => {
+            this.Renderer.setSize(window.innerWidth, window.innerHeight);
+        };
+        window.addEventListener('resize', this.resizeEvent, false);
+
+        this.player1Score = document.createElement("p");
+        this.player1Score.textContent = "0";
+        this.player1Score.style.color = "white";
+        this.player1Score.style.fontSize = "20px";
+
+        this.player2Score = document.createElement("p");
+        this.player2Score.textContent = "0";
+        this.player2Score.style.color = "white";
+        this.player2Score.style.fontSize = "20px";
+
+        this.label1 = new CSS2DObject(this.player1Score);
+        this.label2 = new CSS2DObject(this.player2Score);
+        
+    }
 
 
+    updateScore(player1Score: number, player2Score: number) {
+        this.label1.element.textContent = player1Score.toString();
+        this.label2.element.textContent = player2Score.toString();
+
+        // delete this.label1;
+        // delete this.label2;
+
+        // this.label1 = new CSS2DObject(this.player1Score);
+        // this.label2 = new CSS2DObject(this.player2Score);
+    }
+
+
+    
+
+
+    getDomElement() {
+        return this.Renderer.domElement;
+    }
+
+    render(scene: THREE.Scene, camera: THREE.Camera) {
+        this.Renderer.render(scene, camera);
+    }
+
+    dispose() {
+        window.removeEventListener('resize', this.resizeEvent);
+        this.Renderer.domElement.remove();
+        delete this.Renderer;
+        removeEventListener('resize', this.resizeEvent);
+        delete this.resizeEvent;
+        this.player1Score.remove();
+        this.player2Score.remove();
+        delete this.player1Score;
+        delete this.player2Score;
+        this.label1.element.remove();
+        this.label2.element.remove();
+        delete this.label1;
+        delete this.label2;
+    }
+
+
+}
 
 export class LoadingScreen {
 
@@ -97,11 +181,14 @@ export class Game {
 
     private audioListener: THREE.AudioListener;
     private audio: THREE.Audio;
+    private scoreBoard: ScoreBorad;
+
+    private GlbLoader: GLTFLoader;
 
 
 
     constructor(container: HTMLElement) {
-        this.client = io("http://localhost:3000");
+        this.client = io("http://127.0.0.1:3000");
         this.client.on("connect", () => {
             this.clientId = this.client.id;
         });
@@ -109,11 +196,14 @@ export class Game {
         this.loadingScreen = new LoadingScreen();
         this.loadingManager = new THREE.LoadingManager();
 
+        this.GlbLoader = new GLTFLoader(this.loadingManager);
         this.HDRILoader = new RGBELoader(this.loadingManager);
         this.AudioLoader = new THREE.AudioLoader(this.loadingManager);
         this.SkinLoader = new THREE.TextureLoader(this.loadingManager);
         this.audioListener = new THREE.AudioListener();
         this.audio = new THREE.Audio(this.audioListener);
+
+        this.scoreBoard = new ScoreBorad();
 
     }
 
@@ -124,9 +214,11 @@ export class Game {
 
 
     private gameLoop() {
-        this.scene.render();
+
         this.player.updateMoves(this.client);
-        this.ball.rotate();
+        this.scene.render();
+        // this.ball.rotate();
+        this.scoreBoard.render(this.scene.scene, this.scene.camera);
 
     }
 
@@ -154,6 +246,9 @@ export class Game {
             this.container.remove(child);
         });
         this.container = null;
+
+        this.scoreBoard.dispose();
+        delete this.scoreBoard;
 
         this.arena.dispose();
         this.arena = null;
@@ -224,12 +319,21 @@ export class Game {
 
 
     private start() {
+        this.player.addControle(this.sceneContainer);
         this.client.on("startGame", () => {
-            this.loadingScreen.hide();
-            this.client.on("initPlayer", (position) => {
-                this.player.setPos(position.x, position.y, position.z);
+            // this.loadingScreen.hide();
+            this.client.on("initPlayer", (data) => {
+                this.player.setPos(data.pos.x, data.pos.y, data.pos.z);
+                let controlSet = data.side == "left" ? {up:'a', down: 'd'} : {up:'d', down: 'a'};
+                this.player.setControlSet(controlSet);
+                this.player.setSide(data.side);
+                this.opponent.setSide(data.side == "left" ? "right" : "left");
+
+                this.scoreBoard.label1.position.set(this.player.side == 'left' ? -110 : 110, 0, 0);
+                this.scoreBoard.label2.position.set(this.player.side == 'left' ? 110 : -110, 0, 0);
+                this.scene.scene.add(this.scoreBoard.label1, this.scoreBoard.label2);
             });
-            this.player.addControle(this.sceneContainer);
+            this.sceneContainer.appendChild(this.scoreBoard.getDomElement());
             this.opponent.receiveMoves(this.client);
             this.ball.receiveMoves(this.client);
             this.scene.scene.add(this.container);
@@ -275,6 +379,7 @@ export class Game {
 
         this.loadingManager.onLoad = () => {
             console.log(`player ready with id [${this.clientId}]`);
+            this.loadingScreen.hide();
             this.client.emit("playerReady", this.clientId);
         };
 
@@ -283,10 +388,36 @@ export class Game {
             this.scene.scene.background = texture;
         });
 
+        this.GlbLoader.load(spaceStation.href, (gltf) => {
+            const model = gltf.scene;
+            model.scale.set(0.5, 0.5, 0.5); // Upscale the model by setting the scale values
+            model.rotateY(Math.PI / 2); // Rotate the model by 90 degrees in the y-axis
+            this.player.center.add(model);
+            this.opponent.center.add(model.clone());
+            // this.scene.scene.add(model);
+        });
+
+        // this.GlbLoader.load(galaxy.href, (gltf) => {
+        //     const model = gltf.scene;
+        //     model.scale.set(500, 500, 500); // Upscale the model by setting the scale values
+        //     this.scene.scene.add(model);
+        //     // this.scene.scene.add(model);
+        // });
+
+        this.GlbLoader.load(ball.href, (gltf) => {
+            const model = gltf.scene;
+            model.scale.set(3, 3, 3); // Upscale the model by setting the scale values
+            this.ball.body.add(model);
+            // this.scene.scene.add(model);
+        }, undefined, (error) => {
+            console.error(error);
+        });
+
         this.AudioLoader.load(ost.href, (buffer) => {
             this.audio.setBuffer(buffer);
             this.audio.setLoop(true);
             this.audio.setVolume(0.5);
+            this.audio.play();
         });
 
     }
@@ -296,7 +427,13 @@ export class Game {
     }
 
 
-
+    private receiveScore() {
+        this.client.on("score", (score) => {
+            let playerScore = score[this.player.side];
+            let opponentScore = score[this.opponent.side];
+            this.scoreBoard.updateScore(playerScore, opponentScore);
+        });
+    }
 
     private setUp() {
         this.scene = new Scene();
@@ -319,6 +456,7 @@ export class Game {
         this.recieveForfeit();
         this.receiveWin();
         this.receiveLose();
+        this.receiveScore();
     }
 
 }
