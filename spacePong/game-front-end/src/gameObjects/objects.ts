@@ -9,9 +9,7 @@ export class Arena {
     public aspect: number;
     public width: number;
     public height: number;
-    public geometry: THREE.PlaneGeometry;
-    public material: THREE.MeshStandardMaterial;
-    public body: THREE.Mesh;
+    public body: THREE.Object3D;
     public position: THREE.Vector3;
 
     /**
@@ -25,9 +23,7 @@ export class Arena {
         this.width = size;
         this.height = size * aspect;
 
-        this.geometry = new THREE.PlaneGeometry(this.width, this.height);
-        this.material = new THREE.MeshStandardMaterial({color : 0xFF0000});
-        this.body = new THREE.Mesh(this.geometry, this.material);
+        this.body = new THREE.Object3D();
         this.body.rotation.x = (- Math.PI / 2);
         this.body.position.y = 0.001;
         this.body.receiveShadow = true;
@@ -35,8 +31,6 @@ export class Arena {
     }
 
     public dispose(){
-        this.geometry.dispose();
-        this.material.dispose();
         this.position = null;
     
     }
@@ -111,7 +105,7 @@ export class Controls {
      * @param e The KeyboardEvent object representing the key down event.
      */
     public OnkeyDown(e: KeyboardEvent) {
-        console.log(e.key);
+        // console.log(e.key);
         if (this.state.has(e.key))
             this.state.set(e.key, true);
     }
@@ -121,7 +115,7 @@ export class Controls {
      * @param e The KeyboardEvent object representing the key up event.
      */
     public OnkeyUP(e: KeyboardEvent) {
-        console.log(e.key);
+        // console.log(e.key);
         if (this.state.has(e.key))
             this.state.set(e.key, false);
     }
@@ -180,9 +174,9 @@ export class Paddle
     public extrudeSettings: extrudeSettings;
     public width: number;
     public length: number;
-    // public geometry: THREE.ExtrudeGeometry;
-    // public material: THREE.MeshStandardMaterial;
-    // public body: THREE.Mesh;
+    public geometry: THREE.ExtrudeGeometry;
+    public material: THREE.MeshStandardMaterial;
+    public body: THREE.Mesh;
     public center: THREE.Object3D;
     public position: THREE.Vector3;
     public rotation: THREE.Euler;
@@ -526,7 +520,7 @@ export class Ball {
     }
 
     public rotate(){
-        this.body.rotation.x += 0.01;
+        // this.body.rotation.x += 0.01;
         this.body.rotation.y += 0.01;
     }
 

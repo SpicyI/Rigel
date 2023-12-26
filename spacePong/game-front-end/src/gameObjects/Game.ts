@@ -9,12 +9,15 @@ import {GLTFLoader} from "three/examples/jsm/loaders/GLTFLoader";
 
 import {CSS2DRenderer, CSS2DObject} from "three/examples/jsm/renderers/CSS2DRenderer";
 
+
 const skybox = new URL('../../assets/HDRs/nebula3.hdr', import.meta.url);
-const ballSkin = new URL('../../assets/imgs/sky.jpg', import.meta.url);
+const spectatorGirl = new URL('../../assets/GLBs/spectator_girl.glb', import.meta.url);
 const ost = new URL('../../assets/audio/ost.mp3', import.meta.url);
 const ball = new URL('../../assets/GLBs/blackhole.glb', import.meta.url);
-const spaceStation = new URL('../../assets/GLBs/space_station.glb', import.meta.url);
-const galaxy = new URL('../../assets/GLBs/galaxy.glb', import.meta.url);
+const floatingShip = new URL('../../assets/GLBs/floating_ship.glb', import.meta.url);
+const panel = new URL('../../assets/GLBs/panel.glb', import.meta.url);
+const spaceEnv = new URL('../../assets/GLBs/space_env.glb', import.meta.url);
+
 
 export class ScoreBorad {
 
@@ -142,6 +145,12 @@ export class LoadingScreen {
     }
 }
 
+
+type modelContainer = {
+    model: THREE.Group<THREE.Object3DEventMap>,
+    mixer: THREE.AnimationMixer
+}
+
 export class Game {
 
     /**
@@ -186,9 +195,13 @@ export class Game {
     private GlbLoader: GLTFLoader;
 
 
+    private clock: THREE.Clock = new THREE.Clock();
+    private modelsArr: modelContainer[]; 
+
+
 
     constructor(container: HTMLElement) {
-        this.client = io("http://127.0.0.1:3000");
+        this.client = io("http://10.14.5.8:3000");
         this.client.on("connect", () => {
             this.clientId = this.client.id;
         });
@@ -204,6 +217,7 @@ export class Game {
         this.audio = new THREE.Audio(this.audioListener);
 
         this.scoreBoard = new ScoreBorad();
+        this.modelsArr = new Array();
 
     }
 
@@ -213,12 +227,28 @@ export class Game {
     }
 
 
+    n: number = 0;
     private gameLoop() {
-
+        const delta = this.clock.getDelta();
         this.player.updateMoves(this.client);
-        this.scene.render();
         // this.ball.rotate();
         this.scoreBoard.render(this.scene.scene, this.scene.camera);
+        
+        if (this.modelsArr.length == 2 && this.n == 0){
+            console.log(this.modelsArr);
+            this.n = 1;
+        }
+        
+        this.modelsArr.forEach((mixer) => {
+            mixer.mixer.update(delta);
+        });
+        this.scene.scene.rotation.y += 0.0005;
+        this.ball.rotate();
+        this.scene.render();
+        // if (this.n == 0 ){
+        //     console.log(this.modelsArr);
+        //     this.n = 1;
+        // }
 
     }
 
@@ -268,6 +298,19 @@ export class Game {
         this.AudioLoader = null;
         this.SkinLoader = null;
         this.audioListener = null;
+        this.GlbLoader = null;
+
+        this.modelsArr.forEach((model) => {
+            model.model.traverse((child) => {
+                if (child instanceof THREE.Mesh) {
+                    child.material.dispose();
+                }
+            });
+            model.mixer.stopAllAction();
+            model.model.remove();
+            model.mixer = null;
+            model.model = null;
+        });
 
         this.audio.stop();
         this.audio.disconnect();
@@ -337,7 +380,6 @@ export class Game {
             this.opponent.receiveMoves(this.client);
             this.ball.receiveMoves(this.client);
             this.scene.scene.add(this.container);
-            console.log(this.audio.isPlaying);
             this.scene.renderer.setAnimationLoop(() => {
                 this.gameLoop();
             });
@@ -386,29 +428,72 @@ export class Game {
         this.HDRILoader.load(skybox.href, (texture) => {
             texture.mapping = THREE.EquirectangularReflectionMapping;
             this.scene.scene.background = texture;
+            this.scene.scene.environment = texture;
         });
 
-        this.GlbLoader.load(spaceStation.href, (gltf) => {
-            const model = gltf.scene;
-            model.scale.set(0.5, 0.5, 0.5); // Upscale the model by setting the scale values
-            model.rotateY(Math.PI / 2); // Rotate the model by 90 degrees in the y-axis
-            this.player.center.add(model);
-            this.opponent.center.add(model.clone());
-            // this.scene.scene.add(model);
+        this.GlbLoader.load(floatingShip.href, (gltf) => {
+            const paddle_model = gltf.scene;
+            const bbox = new THREE.Box3().setFromObject(paddle_model);
+            paddle_model.scale.set(0.0012, 0.0012, 24 / (bbox.max.z - bbox.min.z));
+            paddle_model.traverse((child) => {
+                if (child instanceof THREE.Mesh) {
+                    child.material.emissiveIntensity = 5;
+                }
+            });
+            paddle_model.rotateZ(Math.PI / 2);
+            paddle_model.position.z += 8.23;
+            paddle_model.position.y += 2;
+            this.player.center.add(paddle_model);
+            this.opponent.center.add(paddle_model.clone().rotateZ(Math.PI));
         });
 
-        // this.GlbLoader.load(galaxy.href, (gltf) => {
-        //     const model = gltf.scene;
-        //     model.scale.set(500, 500, 500); // Upscale the model by setting the scale values
-        //     this.scene.scene.add(model);
-        //     // this.scene.scene.add(model);
-        // });
+        this.GlbLoader.load(panel.href, (gltf) => {
+            const arene_model = gltf.scene;
+            const bbox = new THREE.Box3().setFromObject(arene_model);
+            arene_model.scale.set(200 / (bbox.max.x - bbox.min.x), 0.1, 150 / (bbox.max.z - bbox.min.z));
+            arene_model.rotateX(Math.PI / 2);
+            arene_model.position.set(-100, -150 / 2, 0);
+            this.arena.body.add(arene_model);
+        });
+
+        this.GlbLoader.load(spaceEnv.href, (gltf) => {
+            const env_model = gltf.scene;
+            env_model.traverse((child) => {
+                if (child instanceof THREE.Mesh) {
+                    child.material.emissiveIntensity = 2;
+                }
+            });
+            const animation = gltf.animations[0];
+            const mixer1 = new THREE.AnimationMixer(env_model);
+            const action = mixer1.clipAction(animation);
+            action.play();
+            this.modelsArr.push({ model: env_model, mixer: mixer1 });
+            env_model.scale.set(200, 200, 200);
+            env_model.position.set(100, 0, -3000);
+            this.scene.scene.add(env_model);
+        });
+
+        this.GlbLoader.load(spectatorGirl.href, (gltf) => {
+            const spec_model = gltf.scene;
+            const animation = gltf.animations[0];
+            const mixer2 = new THREE.AnimationMixer(spec_model);
+            const action = mixer2.clipAction(animation);
+            action.play();
+            this.modelsArr.push({ model: spec_model, mixer: mixer2 });
+            spec_model.scale.set(10, 10, 10);
+            spec_model.position.set(0, 0, -90);
+            this.scene.scene.add(spec_model);
+        });
 
         this.GlbLoader.load(ball.href, (gltf) => {
             const model = gltf.scene;
-            model.scale.set(3, 3, 3); // Upscale the model by setting the scale values
+            model.scale.set(3, 3, 3);
+            model.traverse((child)=>{
+                if (child instanceof THREE.Mesh){
+                    child.material.emissiveIntensity = 0.7;
+                }
+            });
             this.ball.body.add(model);
-            // this.scene.scene.add(model);
         }, undefined, (error) => {
             console.error(error);
         });
@@ -419,7 +504,6 @@ export class Game {
             this.audio.setVolume(0.5);
             this.audio.play();
         });
-
     }
 
     private pushObjects() {

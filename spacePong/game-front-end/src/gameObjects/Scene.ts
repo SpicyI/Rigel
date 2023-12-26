@@ -14,8 +14,7 @@ export class SceneIDE{
     public orbit: OrbitControls;
     public light: THREE.DirectionalLight;
     public plane: THREE.Mesh;
-    public grid: THREE.GridHelper;
-    public axes: THREE.AxesHelper;
+
     public onRender: boolean;
     public showHelpers: boolean;
     public windowScale: number;
@@ -31,10 +30,10 @@ export class SceneIDE{
 	constructor()
 	{
 		this.scene = new THREE.Scene();
-		this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
+		this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100000);
+		this.scene.add(this.camera);
 		this.renderer = new THREE.WebGLRenderer();
-		this.grid = new THREE.GridHelper(100000,1000, 125, 0);
-		this.axes = new THREE.AxesHelper(5);
+
 
 		// this.orbit = null;
 		// this.light = undefined;
@@ -46,11 +45,14 @@ export class SceneIDE{
 		this.windowScale = 0;
 
 
-		this.scene.add(this.axes);
-		this.scene.add(this.grid);
+
 
 		// this.IDESettings = undefined;
 
+		// this.renderer.outputEncoding = THREE.sRGBEncoding;
+		this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+		this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+		this.renderer.toneMappingExposure = 1.5;
 
 		// this.scene.fog = new THREE.Fog( 0x888b8e, 0, 750 );
         this.resizeWindowListener = () => {
@@ -64,20 +66,6 @@ export class SceneIDE{
     /**
      * toggle the visibility of the helpers
      */
-	public activeHelpers(){
-		if (this.showHelpers && !this.helpersVisible)
-		{
-			this.scene.add(this.axes);
-			this.scene.add(this.grid);
-			this.helpersVisible = true;
-		}
-		else if (!this.showHelpers && this.helpersVisible)
-		{
-			this.scene.remove(this.axes);
-			this.scene.remove(this.grid);
-			this.helpersVisible = false;
-		}
-	}
 
     /**
      * add objects to the scene as children
@@ -129,7 +117,6 @@ export class SceneIDE{
 		const height: number = window.innerHeight - (window.innerHeight * (100 - ViewPointPercentage)/ 100);
 		const width: number = window.innerWidth - (window.innerWidth * (100 - ViewPointPercentage)/ 100);
 
-		this.activeHelpers();
 
 		this.renderer.setSize(width, height);
 		element.appendChild(this.renderer.domElement);
@@ -237,8 +224,6 @@ export class SceneIDE{
 		this.plane_geometry.dispose();
 		this.plane_material.dispose();
 
-		this.grid.dispose();
-		this.axes.dispose();
 		
 		this.renderer.domElement.parentNode?.removeChild(this.renderer.domElement);
 		this.renderer.dispose();
