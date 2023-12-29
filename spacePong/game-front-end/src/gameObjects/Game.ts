@@ -238,7 +238,7 @@ export class Game {
 
     private initPlayer(){
         this.client.on("initPlayer", (data) => {
-            // this.loadingScreen.hide();
+            this.loadingScreen.hide();
             this.player.setPos(data.pos.x, data.pos.y, data.pos.z);
             this.opponent.setPos(data.pos.x * -1 , data.pos.y, data.pos.z)
             let controlSet = data.side == "left" ? {up:'a', down: 'd'} : {up:'d', down: 'a'};
