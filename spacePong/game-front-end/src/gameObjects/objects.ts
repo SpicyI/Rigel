@@ -92,8 +92,6 @@ export class Controls {
             this.keys.set(parseInt(key), value);
         });
 
-        // console.log(this.keys);
-
         this.state = new Map();
         Object.entries(keyStates).forEach(([key, value]) => {
             this.state.set(key, value);
@@ -105,7 +103,6 @@ export class Controls {
      * @param e The KeyboardEvent object representing the key down event.
      */
     public OnkeyDown(e: KeyboardEvent) {
-        // console.log(e.key);
         if (this.state.has(e.key))
             this.state.set(e.key, true);
     }
@@ -115,7 +112,6 @@ export class Controls {
      * @param e The KeyboardEvent object representing the key up event.
      */
     public OnkeyUP(e: KeyboardEvent) {
-        // console.log(e.key);
         if (this.state.has(e.key))
             this.state.set(e.key, false);
     }
@@ -126,8 +122,6 @@ export class Controls {
      * @returns {boolean}The state of the key (true/false).
      */
     public getKeySatate(key: string): boolean {
-
-        // console.log(`state for key ${key}: ${this.state.get(key)}`);
         return this.state.get(key);
     }
 
@@ -214,20 +208,20 @@ export class Paddle
         this.controls = new Controls();
         
         
-        // this.geometry = new THREE.ExtrudeGeometry(this.shape,  extrudeSettings);
-        // this.material = new THREE.MeshStandardMaterial({color: clr});
-        // this.body = new THREE.Mesh(this.geometry, this.material);
+        this.geometry = new THREE.ExtrudeGeometry(this.shape,  extrudeSettings);
+        this.material = new THREE.MeshStandardMaterial({color: clr});
+        this.body = new THREE.Mesh(this.geometry, this.material);
         
-        // this.body.position.z = -(this.extrudeSettings.depth / 2);
-        // this.body.position.y = this.extrudeSettings.bevelSize;
-        // this.body.position.x =  -(this.length / 2)
-        // this.body.castShadow = true;
+        this.body.position.z = -(this.extrudeSettings.depth / 2);
+        this.body.position.y = this.extrudeSettings.bevelSize;
+        this.body.position.x =  -(this.length / 2)
+        this.body.castShadow = true;
         
         
         
         this.center = new THREE.Object3D();
         this.center.position.set(0, 0, 0);
-        // this.center.add(this.body);
+        this.center.add(this.body);
 
         
         this.position = this.center.position;
@@ -423,12 +417,10 @@ export class Paddle
      */
     public testMoves(){
         const speed: number = 2;
-        // console.log(this.controlSet.up, this.controlSet.down);
         
         let up: boolean = this.controls.getKeySatate(this.controlSet.up);
         let down: boolean = this.controls.getKeySatate(this.controlSet.down);
 
-        // console.log(up, down);
         if (up === undefined || down === undefined)
             return ;
 

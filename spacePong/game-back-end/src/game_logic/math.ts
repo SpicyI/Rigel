@@ -12,7 +12,8 @@ export class customRand {
      * @returns {number} The random integer.
      */
     static randInt(low: number = 0, high: number = 1000): number {
-        return low + Math.floor(Math.random() * (high - low + 1));
+        const rand  = low + Math.floor(Math.random() * (high - low + 1));
+        return rand;
     }
 
     /**
@@ -32,9 +33,10 @@ export class customRand {
      * @returns {number[]} The random direction vector as an array [x, y, z].
      */
     static randomDirection(min: number, max: number): number[] {
-        let x: number = Math.cos(customRand.randFloat(min, max));
+        let randAngle = this.degToRad(this.randInt(min, max));
+        let x: number = Math.cos(randAngle);
         let y: number = 0;
-        let z: number = Math.sin(customRand.randFloat(min, max));
+        let z: number = Math.sin(randAngle);
         return [x, y, z];
     }
 

@@ -1,6 +1,4 @@
-
-
-.loading-screen{
+/* .loading-screen{
     position: absolute;
     top: 50%;
     left: 50%;
@@ -13,17 +11,67 @@
     flex-direction: column;
     align-items: center;
     color: aliceblue;
-}
+} */
 
-#progress-bar{
+/* #progress-bar{
     width: 30%;
     margin-top: 10px;
+} */
+
+.loading-screen {
+  --hue: 320;
+  --holesize: 60%;
+  --track-bg: hsl(233 34% 92%);
+  
+  block-size: 50vmin;
+  inline-size: 50vmin;
+  min-inline-size: 100px;
+  min-block-size: 100px;
+  display: flex;
+  place-items: center;
+  position: absolute;
+  font-weight: 700;
+  font-size: max(10vmin, 1.4rem);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  height: 100%;
+  /* background-color: rgba(0,0,0,0.8); */
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  color: aliceblue;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    border-radius: 50%;
+    z-index: -1;
+    background: conic-gradient(
+      hsl(var(--hue) 100% 70%),
+      hsl(var(--hue) 100% 40%),
+      hsl(var(--hue) 100% 70%) var(--progress, 0%),
+      var(--track-bg) var(--progress, 0%) 100%
+    );
+    
+    mask-image: radial-gradient(
+      transparent var(--holesize),
+      black calc(var(--holesize) + 0.5px)
+    );
+  }
 }
 
-#label1{
+
+/* #label1{
     color: aliceblue;
     font-size: 2rem;
-}
+} */
 
 /* Reset default margin and padding */
 body, html {

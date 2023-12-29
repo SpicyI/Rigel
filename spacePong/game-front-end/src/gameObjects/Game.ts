@@ -1,13 +1,14 @@
 
-import {SceneIDE as Scene} from "./Scene";
-import { Paddle, Arena , Controls, Ball} from "./objects";
 import * as THREE from 'three';
 import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader";
-import {io} from "socket.io-client";
-import { Socket } from 'socket.io-client';
-import {GLTFLoader} from "three/examples/jsm/loaders/GLTFLoader";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 
-import {CSS2DRenderer, CSS2DObject} from "three/examples/jsm/renderers/CSS2DRenderer";
+import {io , Socket} from "socket.io-client";
+
+import {SceneIDE as Scene} from "./Scene";
+import { Paddle, Arena , Ball} from "./objects";
+import { ScoreBorad, LoadingScreen } from './elements';
+
 
 
 const skybox = new URL('../../assets/HDRs/nebula3.hdr', import.meta.url);
@@ -17,133 +18,6 @@ const ball = new URL('../../assets/GLBs/blackhole.glb', import.meta.url);
 const floatingShip = new URL('../../assets/GLBs/floating_ship.glb', import.meta.url);
 const panel = new URL('../../assets/GLBs/panel.glb', import.meta.url);
 const spaceEnv = new URL('../../assets/GLBs/space_env.glb', import.meta.url);
-
-
-export class ScoreBorad {
-
-    private Renderer: CSS2DRenderer;
-    private resizeEvent: EventListener;
-
-    private player1Score: HTMLDivElement;
-    private player2Score: HTMLDivElement;
-
-    public label1: CSS2DObject;
-    public label2: CSS2DObject;
-
-    constructor() {
-        this.Renderer = new CSS2DRenderer();
-        this.Renderer.setSize(window.innerWidth, window.innerHeight);
-        this.Renderer.domElement.style.position = 'absolute';
-        this.Renderer.domElement.style.top = '0px';
-        this.Renderer.domElement.style.pointerEvents = 'none';
-
-        this.resizeEvent = () => {
-            this.Renderer.setSize(window.innerWidth, window.innerHeight);
-        };
-        window.addEventListener('resize', this.resizeEvent, false);
-
-        this.player1Score = document.createElement("p");
-        this.player1Score.textContent = "0";
-        this.player1Score.style.color = "white";
-        this.player1Score.style.fontSize = "20px";
-
-        this.player2Score = document.createElement("p");
-        this.player2Score.textContent = "0";
-        this.player2Score.style.color = "white";
-        this.player2Score.style.fontSize = "20px";
-
-        this.label1 = new CSS2DObject(this.player1Score);
-        this.label2 = new CSS2DObject(this.player2Score);
-        
-    }
-
-
-    updateScore(player1Score: number, player2Score: number) {
-        this.label1.element.textContent = player1Score.toString();
-        this.label2.element.textContent = player2Score.toString();
-
-        // delete this.label1;
-        // delete this.label2;
-
-        // this.label1 = new CSS2DObject(this.player1Score);
-        // this.label2 = new CSS2DObject(this.player2Score);
-    }
-
-
-    
-
-
-    getDomElement() {
-        return this.Renderer.domElement;
-    }
-
-    render(scene: THREE.Scene, camera: THREE.Camera) {
-        this.Renderer.render(scene, camera);
-    }
-
-    dispose() {
-        window.removeEventListener('resize', this.resizeEvent);
-        this.Renderer.domElement.remove();
-        delete this.Renderer;
-        removeEventListener('resize', this.resizeEvent);
-        delete this.resizeEvent;
-        this.player1Score.remove();
-        this.player2Score.remove();
-        delete this.player1Score;
-        delete this.player2Score;
-        this.label1.element.remove();
-        this.label2.element.remove();
-        delete this.label1;
-        delete this.label2;
-    }
-
-
-}
-
-export class LoadingScreen {
-
-    private loadingScreen: HTMLDivElement;
-    private label: HTMLLabelElement;
-    private progressBar: HTMLProgressElement;
-
-    constructor() {
-        this.loadingScreen = document.createElement("div");
-        this.loadingScreen.classList.add("loading-screen");
-
-        this.label = document.createElement("label");
-        this.label.id = "label1";
-        this.label.htmlFor = "progress-bar";
-        this.label.textContent = "Loading Assets...";
-        this.loadingScreen.appendChild(this.label);
-
-        this.progressBar = document.createElement("progress");
-        this.progressBar.id = "progress-bar";
-        this.progressBar.value = 0;
-        this.progressBar.max = 100;
-        this.loadingScreen.appendChild(this.progressBar);
-    }
-
-    updateProgress(progress: number) {
-        this.progressBar.value = progress;
-    }
-
-    hide() {
-        this.loadingScreen.style.display = "none";
-        this.loadingScreen.remove();
-    }
-
-    show() {
-        this.loadingScreen.style.display = "block";
-    }
-
-    remove() {
-        this.loadingScreen.remove();
-    }
-
-    getLoadingScreen() {
-        return this.loadingScreen;
-    }
-}
 
 
 type modelContainer = {
@@ -197,14 +71,24 @@ export class Game {
 
     private clock: THREE.Clock = new THREE.Clock();
     private modelsArr: modelContainer[]; 
+    private privateGameId: string = "none";
+    private acces_token: string;
 
+    constructor(container: HTMLElement, acces_token: string, gameId: string = "none") {
+        this.privateGameId = gameId;
+        this.acces_token = acces_token;
 
+        this.client = io("ws://127.0.0.1:3000",{
+            auth: {
+                acces_token: this.acces_token,
+                gameId: this.privateGameId
+            }
+        });
 
-    constructor(container: HTMLElement) {
-        this.client = io("http://10.14.5.8:3000");
         this.client.on("connect", () => {
             this.clientId = this.client.id;
         });
+
         this.sceneContainer = container;
         this.loadingScreen = new LoadingScreen();
         this.loadingManager = new THREE.LoadingManager();
@@ -227,17 +111,13 @@ export class Game {
     }
 
 
-    n: number = 0;
     private gameLoop() {
         const delta = this.clock.getDelta();
         this.player.updateMoves(this.client);
-        // this.ball.rotate();
+
         this.scoreBoard.render(this.scene.scene, this.scene.camera);
         
-        if (this.modelsArr.length == 2 && this.n == 0){
-            console.log(this.modelsArr);
-            this.n = 1;
-        }
+
         
         this.modelsArr.forEach((mixer) => {
             mixer.mixer.update(delta);
@@ -245,10 +125,6 @@ export class Game {
         this.scene.scene.rotation.y += 0.0005;
         this.ball.rotate();
         this.scene.render();
-        // if (this.n == 0 ){
-        //     console.log(this.modelsArr);
-        //     this.n = 1;
-        // }
 
     }
 
@@ -263,12 +139,15 @@ export class Game {
             this.setUp();
             this.start();
         });
-        // this.GameId = "test";
-        // this.joinGame();
-        // this.setUp();
-        // this.start();
-
     }
+
+    private preMadeGame() {
+        this.GameId = this.privateGameId;
+        this.joinGame();
+        this.setUp();
+        this.start();
+    }
+
 
     public dispose() {
 
@@ -337,8 +216,7 @@ export class Game {
     private recieveForfeit() {
         this.client.on("ff", () => {
             this.dispose();
-            console.log("opponent left so you won");
-            this.sceneContainer.innerHTML = "<h1>you won by forfiet</h1>";
+            this.sceneContainer.innerHTML = "<h1>you won by forfeit</h1>";
         });
 
 
@@ -347,7 +225,6 @@ export class Game {
     private receiveWin() {
         this.client.on("win", () => {
             this.dispose();
-            console.log("you won");
             this.sceneContainer.innerHTML = "<h1>you won</h1>";
         });
     }
@@ -355,8 +232,23 @@ export class Game {
     private receiveLose() {
         this.client.on("lose", () => {
             this.dispose();
-            console.log("you lost");
             this.sceneContainer.innerHTML = "<h1>you lost</h1>";
+        });
+    }
+
+    private initPlayer(){
+        this.client.on("initPlayer", (data) => {
+            // this.loadingScreen.hide();
+            this.player.setPos(data.pos.x, data.pos.y, data.pos.z);
+            this.opponent.setPos(data.pos.x * -1 , data.pos.y, data.pos.z)
+            let controlSet = data.side == "left" ? {up:'a', down: 'd'} : {up:'d', down: 'a'};
+            this.player.setControlSet(controlSet);
+            this.player.setSide(data.side);
+            this.opponent.setSide(data.side == "left" ? "right" : "left");
+
+            this.scoreBoard.label1.position.set(this.player.side == 'left' ? -110 : 120, 10, 0);
+            this.scoreBoard.label2.position.set(this.player.side == 'left' ? 110 : -120, 10, 0);
+            this.scene.scene.add(this.scoreBoard.label1, this.scoreBoard.label2);
         });
     }
 
@@ -364,38 +256,17 @@ export class Game {
     private start() {
         this.player.addControle(this.sceneContainer);
         this.client.on("startGame", () => {
-            // this.loadingScreen.hide();
-            this.client.on("initPlayer", (data) => {
-                this.player.setPos(data.pos.x, data.pos.y, data.pos.z);
-                let controlSet = data.side == "left" ? {up:'a', down: 'd'} : {up:'d', down: 'a'};
-                this.player.setControlSet(controlSet);
-                this.player.setSide(data.side);
-                this.opponent.setSide(data.side == "left" ? "right" : "left");
+            this.initPlayer();
 
-                this.scoreBoard.label1.position.set(this.player.side == 'left' ? -110 : 110, 0, 0);
-                this.scoreBoard.label2.position.set(this.player.side == 'left' ? 110 : -110, 0, 0);
-                this.scene.scene.add(this.scoreBoard.label1, this.scoreBoard.label2);
-            });
             this.sceneContainer.appendChild(this.scoreBoard.getDomElement());
             this.opponent.receiveMoves(this.client);
             this.ball.receiveMoves(this.client);
             this.scene.scene.add(this.container);
+            
             this.scene.renderer.setAnimationLoop(() => {
                 this.gameLoop();
             });
         });
-        // this.loadingScreen.hide();
-
-        // this.player.setPos(-100, 0, 0);
-        // this.opponent.setPos(100, 0, 0);
-        // this.player.addControle(this.sceneContainer);
-        // this.opponent.receiveMoves(this.client);
-        // this.ball.receiveMoves(this.client);
-        // this.scene.scene.add(this.container);
-        // this.scene.renderer.setAnimationLoop(() => {
-        //     this.gameLoop(); 
-        // });
-
     }
 
 
@@ -421,7 +292,7 @@ export class Game {
 
         this.loadingManager.onLoad = () => {
             console.log(`player ready with id [${this.clientId}]`);
-            this.loadingScreen.hide();
+            // this.loadingScreen.hide();
             this.client.emit("playerReady", this.clientId);
         };
 
@@ -435,16 +306,22 @@ export class Game {
             const paddle_model = gltf.scene;
             const bbox = new THREE.Box3().setFromObject(paddle_model);
             paddle_model.scale.set(0.0012, 0.0012, 24 / (bbox.max.z - bbox.min.z));
-            paddle_model.traverse((child) => {
-                if (child instanceof THREE.Mesh) {
-                    child.material.emissiveIntensity = 5;
-                }
-            });
+            
             paddle_model.rotateZ(Math.PI / 2);
             paddle_model.position.z += 8.23;
             paddle_model.position.y += 2;
+
+            const cloned = paddle_model.clone();
+            cloned.traverse((child) => {
+                if (child instanceof THREE.Mesh) {
+                    child.material.color.set(0xff0000); // Set the color to bright red
+                    child.material.emissive.set(0xffffff); // Set the emissive color to white for a brighter effect
+                    child.material.emissiveIntensity = 5; // Increase the emissive intensity for better visibility
+                }
+            });
+            
             this.player.center.add(paddle_model);
-            this.opponent.center.add(paddle_model.clone().rotateZ(Math.PI));
+            this.opponent.center.add(cloned.rotateZ(Math.PI));
         });
 
         this.GlbLoader.load(panel.href, (gltf) => {
@@ -535,8 +412,16 @@ export class Game {
     }
 
     launch() {
-        this.queueUp();
-        this.receiveGameId();
+
+        console.log(this.privateGameId);
+
+        if (this.privateGameId == "none"){
+            this.queueUp();
+            this.receiveGameId();
+        }
+        else
+            this.preMadeGame();
+
         this.recieveForfeit();
         this.receiveWin();
         this.receiveLose();

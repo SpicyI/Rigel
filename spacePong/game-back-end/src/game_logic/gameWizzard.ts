@@ -133,7 +133,7 @@ export class Game {
 
     private timeOutId: NodeJS.Timeout | null = null;
     public start() {
-        this.ball.setDirection(new Vector3(customRand.randInt() % 2 ? 1 : -1, 0, 0).normalize());
+        this.ball.setDirection(new Vector3(...customRand.randomDirection(-30 ,30)).normalize());
         
         this.playerL.echoPos();
         this.playerR.echoPos();
@@ -148,7 +148,7 @@ export class Game {
 
         this.timeOutId = setTimeout(() => {
             this.gameLoop();
-        }, 2000);
+        }, 3000);
     }
 
     /**
@@ -320,7 +320,7 @@ export class lobby {
      * @param {string} playerSocketIdToSet - The socket id of the player to set.
      */
     public setReady(playerSocketIdToSet: string) {
-        console.log(`consfirmaion from ${playerSocketIdToSet}`)
+        console.log(`confirmaion from ${playerSocketIdToSet}`)
         this.players.forEach((value, key) => {
             if (key.playerSocket && key.playerSocket.id == playerSocketIdToSet) {
                 key.isReady = true;

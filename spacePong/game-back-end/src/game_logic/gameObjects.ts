@@ -65,17 +65,21 @@ export class ball {
      * increases the ball speed by 5 each time till it reaches 110.
      */
     public increseSpeed() {
-        console.log(`speed is: ${this.speed}`);
         if (this.speed + 20 <= 180)
             this.speed += 20;
     }
 
+
+    private timeOutId : NodeJS.Timeout | null = null;
     /**
      * resets the ball position to 0,3,0 and speed to 50.
      */
     public reset() {
         this.position.set(0, 3, 0);
-        this.speed = 85;
+        this.speed = 0;
+        this.timeOutId = setTimeout(() => {
+            this.speed = 85;
+        }, 3000);
     }
 
     /**
@@ -94,6 +98,8 @@ export class ball {
     }
 
     public dispose() {
+        if (this.timeOutId != null)
+            clearTimeout(this.timeOutId);
         delete this.position;
         delete this.direction;
         delete this.quaternion;
@@ -134,7 +140,7 @@ export class Player {
         this.position = position;
 
         this.side = set.side || 'left';
-        this.length = set.length || 12;
+        this.length = set.length || 14;
         this.width = set.width || 1.5;
         this.speed = set.speed || 2;
 
@@ -163,7 +169,6 @@ export class Player {
             return;
 
         this.socket.on('playerMove', (data: any) => {
-            // console.log("recived data:", data, "END OF TRANSFER");
             this.position.copy(data.position);
         });
     }
@@ -175,7 +180,6 @@ export class Player {
     public emitPOS() {
         if (this.socket === undefined)
             return;
-        // console.log(`emiting data to ${this.lobby} with ${this.socket.id}:`, this.position, "END OF TRANSFER");
         this.socket.to(this.lobby).emit('playerMove', { position: this.position });
     }
 
