@@ -150,10 +150,13 @@ export class SceneIDE{
 
 		this.orbit = new OrbitControls(this.camera,this.renderer.domElement);
 
-		this.light = new THREE.DirectionalLight( 0xffffff, 0.75 );
+		this.light = new THREE.DirectionalLight( 0xffffff, 2);
+		
 		this.EnabledShadows();
 		this.light.castShadow = true;
-		this.light.position.set(100,100,0);
+		this.light.position.set(1000,1000,0);
+		this.light.shadow.mapSize.width = 2048;
+		this.light.shadow.mapSize.height = 2048;
 
 		this.plane_geometry = new THREE.PlaneGeometry(1000,1000);
 		this.plane_material = new THREE.MeshStandardMaterial(

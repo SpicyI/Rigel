@@ -148,7 +148,7 @@ export class Game {
 
         this.timeOutId = setTimeout(() => {
             this.gameLoop();
-        }, 3000);
+        }, 5000);
     }
 
     /**
@@ -178,7 +178,7 @@ export class Game {
     /**
     * finishes the game.
     */
-    finish() {
+    async finish() {
         if (this.playerL.isWinner) {
             this.playerL.win();
             this.playerR.lose();
@@ -188,6 +188,11 @@ export class Game {
             this.playerL.lose();
         }
         this.dispose();
+        // await this.matchService.createMatch({
+        //     [5, 0],
+        //     "winnerId",
+        //     "loserId",
+        // });
         console.log('game finished');
     }
 
@@ -256,6 +261,7 @@ export class lobby {
         this.ball = new ball();
         this.arena = new arena();
         this.game = null;
+        this.players.clear();
         this.sides = [
             { side: 'left', pos: new Vector3((this.arena.width / -2), 0, 0) },
             { side: 'right', pos: new Vector3((this.arena.width / 2), 0, 0) }
@@ -279,9 +285,7 @@ export class lobby {
             this.setReady(socketID);
         });
 
-        console.log(`player added to lobby: ${this.id} as ${clientToAdd.id}`);
-        if (this.players.size == 2)
-            this.setupGame();
+        console.log(`player added to lobby: ${this.id} as ${clientToAdd.id}`); 
     }
 
     /**

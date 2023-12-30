@@ -6,7 +6,7 @@ let ingame = false;
 
 startButton.addEventListener("click", () => {
     ingame = true;
-    let game = new Game(GameContainer, "Nequeporroquisquamestquidoloremipsum");
+    let game = new Game(GameContainer, "acces_token_should_be_here",  "userId_should_be_here");
     game.launch();
 });
 

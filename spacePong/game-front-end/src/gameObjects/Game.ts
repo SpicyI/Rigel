@@ -12,7 +12,7 @@ import { ScoreBorad, LoadingScreen } from './elements';
 
 
 const skybox = new URL('../../assets/HDRs/nebula3.hdr', import.meta.url);
-const spectatorGirl = new URL('../../assets/GLBs/spectator_girl.glb', import.meta.url);
+const spectator_bot = new URL('../../assets/GLBs/bot.glb', import.meta.url);
 const ost = new URL('../../assets/audio/ost.mp3', import.meta.url);
 const ball = new URL('../../assets/GLBs/blackhole.glb', import.meta.url);
 const floatingShip = new URL('../../assets/GLBs/floating_ship.glb', import.meta.url);
@@ -73,16 +73,26 @@ export class Game {
     private modelsArr: modelContainer[]; 
     private privateGameId: string = "none";
     private acces_token: string;
-
-    constructor(container: HTMLElement, acces_token: string, gameId: string = "none") {
+    private userId: string = "none";
+    constructor(container: HTMLElement, acces_token: string, userId: string, gameId: string = "none") {
         this.privateGameId = gameId;
         this.acces_token = acces_token;
-
-        this.client = io("ws://127.0.0.1:3000",{
-            auth: {
-                acces_token: this.acces_token,
-                gameId: this.privateGameId
+        this.userId = userId;
+        this.client = io("ws://127.0.0.1:3000", {
+            transportOptions: {
+                polling: {
+                    extraHeaders: {
+                        'Authorization': `Bearer ${this.acces_token}`
+                    }
+                }
+            },
+            query: {
+                userId: this.userId
             }
+        });
+
+        this.client.on("connect_error", (err) => {
+            console.log(err);
         });
 
         this.client.on("connect", () => {
@@ -238,7 +248,6 @@ export class Game {
 
     private initPlayer(){
         this.client.on("initPlayer", (data) => {
-            this.loadingScreen.hide();
             this.player.setPos(data.pos.x, data.pos.y, data.pos.z);
             this.opponent.setPos(data.pos.x * -1 , data.pos.y, data.pos.z)
             let controlSet = data.side == "left" ? {up:'a', down: 'd'} : {up:'d', down: 'a'};
@@ -262,7 +271,6 @@ export class Game {
             this.opponent.receiveMoves(this.client);
             this.ball.receiveMoves(this.client);
             this.scene.scene.add(this.container);
-            
             this.scene.renderer.setAnimationLoop(() => {
                 this.gameLoop();
             });
@@ -291,15 +299,16 @@ export class Game {
         };
 
         this.loadingManager.onLoad = () => {
-            console.log(`player ready with id [${this.clientId}]`);
-            // this.loadingScreen.hide();
-            this.client.emit("playerReady", this.clientId);
+            this.loadingScreen.hide();
+            this.client.emit("playerReady", this.clientId);     
         };
 
         this.HDRILoader.load(skybox.href, (texture) => {
             texture.mapping = THREE.EquirectangularReflectionMapping;
             this.scene.scene.background = texture;
             this.scene.scene.environment = texture;
+            this.scene.scene.backgroundIntensity = 3.5;
+            this.scene.render();
         });
 
         this.GlbLoader.load(floatingShip.href, (gltf) => {
@@ -317,11 +326,14 @@ export class Game {
                     child.material.color.set(0xff0000); // Set the color to bright red
                     child.material.emissive.set(0xffffff); // Set the emissive color to white for a brighter effect
                     child.material.emissiveIntensity = 5; // Increase the emissive intensity for better visibility
+                    child.material.metalness = 0.1; // Make the material more metallic looking
                 }
             });
             
             this.player.center.add(paddle_model);
             this.opponent.center.add(cloned.rotateZ(Math.PI));
+            this.scene.render();
+
         });
 
         this.GlbLoader.load(panel.href, (gltf) => {
@@ -331,6 +343,8 @@ export class Game {
             arene_model.rotateX(Math.PI / 2);
             arene_model.position.set(-100, -150 / 2, 0);
             this.arena.body.add(arene_model);
+            this.scene.render();
+
         });
 
         this.GlbLoader.load(spaceEnv.href, (gltf) => {
@@ -348,18 +362,22 @@ export class Game {
             env_model.scale.set(200, 200, 200);
             env_model.position.set(100, 0, -3000);
             this.scene.scene.add(env_model);
+            this.scene.render();
+
         });
 
-        this.GlbLoader.load(spectatorGirl.href, (gltf) => {
+        this.GlbLoader.load(spectator_bot.href, (gltf) => {
             const spec_model = gltf.scene;
             const animation = gltf.animations[0];
             const mixer2 = new THREE.AnimationMixer(spec_model);
             const action = mixer2.clipAction(animation);
             action.play();
             this.modelsArr.push({ model: spec_model, mixer: mixer2 });
-            spec_model.scale.set(10, 10, 10);
-            spec_model.position.set(0, 0, -90);
+            spec_model.scale.set(0.2, 0.2, 0.2);
+            spec_model.position.set(0, 0, -120);
             this.scene.scene.add(spec_model);
+            this.scene.render();
+
         });
 
         this.GlbLoader.load(ball.href, (gltf) => {
@@ -384,6 +402,8 @@ export class Game {
     }
 
     private pushObjects() {
+        this.container = new THREE.Object3D();
+        this.container.position.set(0, 0, 0);
         this.container.add(this.arena.body, this.ball.body, this.player.center, this.opponent.center);
     }
 
@@ -401,19 +421,15 @@ export class Game {
         this.scene.init(this.sceneContainer);
         this.scene.scene.add(this.audioListener);
 
-        this.container = new THREE.Object3D();
-        this.container.position.set(0, 0, 0);
+
 
         this.setObjects();
         this.pushObjects();
-        // this.sceneContainer.appendChild(this.loadingScreen.getLoadingScreen());
         this.setLoader();
 
     }
 
     launch() {
-
-        console.log(this.privateGameId);
 
         if (this.privateGameId == "none"){
             this.queueUp();
@@ -431,62 +447,7 @@ export class Game {
 }
 
 
-// ! main fn is for test proposes only
-// export function main(Element: HTMLElement) {
-
-//     let prog = new LoadingScreen();
-//     Element.appendChild(prog.getLoadingScreen());
-//     const loadmanager = new THREE.LoadingManager();
-//     loadmanager.onProgress = (url, itemsLoaded, itemsTotal) => {
-//         prog.updateProgress(itemsLoaded / itemsTotal * 100);
-//     };
-
-//     loadmanager.onLoad = () => {
-//         prog.hide();
-//     }
-
-//     let scene = new Scene();
-//     const HDRI = new RGBELoader(loadmanager);
-
-//     HDRI.load("../../assets/HDRS/nebula3.hdr", (texture) => {
-//         texture.mapping = THREE.EquirectangularReflectionMapping;
-//         scene.scene.background = texture;
-//     });
-
-//     scene.init(Element);
-//     let container = new THREE.Object3D();
-//     container.position.set(0, 0, 0);
-
-//     let ball = new Ball(2, 0xffffff);
-//     ball.setPos(0, 3, 0);
-
-//     let arena = new Arena(200, 3/4);
-//     let player = new Paddle(undefined, 1, 3,0x00ff00);
-//     let opponent = new Paddle(undefined, 1, 3, 0x0000ff);
-
-//     player.addArena(arena);
-
-//     player.center.position.set(-100,0,0 );
-//     opponent.setPos(100, 0, 0);
-//     container.add(arena.body, player.center, opponent.center, ball.body);
-    
-//     player.addControle(Element);
-//     scene.scene.add(container);
-
-//     scene.renderer.setAnimationLoop(() => {
-//         scene.render();
-//         player.testMoves();
-//         ball.rotate();
-//     });
-
-
-
-// }
-
-
-
 export default {
-    // main,
     LoadingScreen,
     Game,
 }
