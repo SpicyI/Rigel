@@ -123,6 +123,7 @@ export class Player {
     public socket: Socket;
     public lobby: string;
     public isWinner: boolean;
+    public playerId: string;
 
     /**
      * Creates a new Player instance.
@@ -156,6 +157,7 @@ export class Player {
 
     public mountSocket(socket: Socket, lobby: string): void {
         this.socket = socket;
+        this.playerId = socket.handshake.query.userId as string;
         this.lobby = lobby;
     }
 

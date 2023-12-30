@@ -179,20 +179,27 @@ export class Game {
     * finishes the game.
     */
     async finish() {
+
+        let winnerId: string;
+        let loserId: string
         if (this.playerL.isWinner) {
             this.playerL.win();
+            winnerId = this.playerL.playerId
             this.playerR.lose();
+            loserId = this.playerR.playerId;
         }
         else {
             this.playerR.win();
+            winnerId = this.playerR.playerId;
             this.playerL.lose();
+            loserId = this.playerL.playerId;
         }
-        this.dispose();
         // await this.matchService.createMatch({
-        //     [5, 0],
+        //     [this.playerL.Score, this.playerR.Score],
         //     "winnerId",
         //     "loserId",
         // });
+        this.dispose();
         console.log('game finished');
     }
 

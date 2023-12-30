@@ -69,10 +69,12 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect{
   }
  
   handleConnection(client: Socket) {
-    console.log('\x1b[32m',`new connection from ${client.id}`,'\x1b[37m');
-    this.server.sockets.sockets.forEach((value, key) => {
-      console.log('\x1b[33m',`connected clients: ${key}`,'\x1b[37m');
-    });
+
+    console.log(client.handshake.query.userId);
+    // console.log('\x1b[32m',`new connection from ${client.id}`,'\x1b[37m');
+    // this.server.sockets.sockets.forEach((value, key) => {
+    //   console.log('\x1b[33m',`connected clients: ${key}`,'\x1b[37m');
+    // });
   }
 
   handleDisconnect(client: Socket) {
