@@ -18,12 +18,17 @@ const ball = new URL('../../assets/GLBs/blackhole.glb', import.meta.url);
 const floatingShip = new URL('../../assets/GLBs/floating_ship.glb', import.meta.url);
 const panel = new URL('../../assets/GLBs/panel.glb', import.meta.url);
 const spaceEnv = new URL('../../assets/GLBs/space_env.glb', import.meta.url);
+const avatar1 = new URL('../../assets/GLBs/avatar1.glb', import.meta.url);
+const avatar2 = new URL('../../assets/GLBs/avatar2.glb', import.meta.url);
 
 
 type modelContainer = {
     model: THREE.Group<THREE.Object3DEventMap>,
     mixer: THREE.AnimationMixer
 }
+
+
+
 
 export class Game {
 
@@ -133,6 +138,7 @@ export class Game {
             mixer.mixer.update(delta);
         });
         this.scene.scene.rotation.y += 0.0005;
+        this.scene.orbit.update();
         this.ball.rotate();
         this.scene.render();
 
@@ -160,7 +166,7 @@ export class Game {
 
 
     public dispose() {
-
+        console.log(`disposing at ${Date.now()}`);
         this.container.children.forEach((child) => {
             this.container.remove(child);
         });
@@ -225,6 +231,7 @@ export class Game {
 
     private recieveForfeit() {
         this.client.on("ff", () => {
+            console.log("forfeit");
             this.dispose();
             this.sceneContainer.innerHTML = "<h1>you won by forfeit</h1>";
         });
@@ -293,6 +300,10 @@ export class Game {
 
     }
 
+    // async private modelLoader(url: URL, callback:Function){
+
+    // }
+
     private setLoader() {
         this.loadingManager.onProgress = (url, itemsLoaded, itemsTotal) => {
             this.loadingScreen.updateProgress(itemsLoaded / itemsTotal * 100);
@@ -300,14 +311,14 @@ export class Game {
 
         this.loadingManager.onLoad = () => {
             this.loadingScreen.hide();
-            this.client.emit("playerReady", this.clientId);     
+            this.client.emit("playerReady", this.clientId);
         };
 
         this.HDRILoader.load(skybox.href, (texture) => {
             texture.mapping = THREE.EquirectangularReflectionMapping;
             this.scene.scene.background = texture;
             this.scene.scene.environment = texture;
-            this.scene.scene.backgroundIntensity = 3.5;
+            this.scene.scene.backgroundIntensity = 3;
             this.scene.render();
         });
 
@@ -323,7 +334,7 @@ export class Game {
             const cloned = paddle_model.clone();
             cloned.traverse((child) => {
                 if (child instanceof THREE.Mesh) {
-                    child.material.color.set(0xff0000); // Set the color to bright red
+                    child.material.color.set(0xffffff); // Set the color to bright white
                     child.material.emissive.set(0xffffff); // Set the emissive color to white for a brighter effect
                     child.material.emissiveIntensity = 5; // Increase the emissive intensity for better visibility
                     child.material.metalness = 0.1; // Make the material more metallic looking
@@ -391,6 +402,34 @@ export class Game {
             this.ball.body.add(model);
         }, undefined, (error) => {
             console.error(error);
+        });
+
+        this.GlbLoader.load(avatar1.href,(gltf)=> {
+            const vatar_model = gltf.scene;
+            const bbox = new THREE.Box3().setFromObject(vatar_model);
+            const animation = gltf.animations[0];
+            const mixer3 = new THREE.AnimationMixer(vatar_model);
+            const action = mixer3.clipAction(animation);
+            action.play();
+            vatar_model.scale.set(0.35, 0.35, 0.35);
+            vatar_model.rotateY(Math.PI / 2);
+            this.modelsArr.push({ model: vatar_model, mixer: mixer3 });
+            vatar_model.position.set(-170, 0, 0);
+            this.scene.scene.add(vatar_model);
+        });
+
+        this.GlbLoader.load(avatar2.href,(gltf)=> {
+            const vatar_model2 = gltf.scene;
+            const bbox = new THREE.Box3().setFromObject(vatar_model2);
+            const animation = gltf.animations[0];
+            const mixer4 = new THREE.AnimationMixer(vatar_model2);
+            const action = mixer4.clipAction(animation);
+            action.play();
+            vatar_model2.scale.set(40, 40, 40);
+            vatar_model2.rotateY(Math.PI / -2);
+            this.modelsArr.push({ model: vatar_model2, mixer: mixer4 });
+            vatar_model2.position.set(170, 0, 0);
+            this.scene.scene.add(vatar_model2);
         });
 
         this.AudioLoader.load(ost.href, (buffer) => {

@@ -96,7 +96,6 @@ export class LoadingScreen {
         this.loadingScreen.setAttribute('aria-valuenow', '0');
         this.loadingScreen.setAttribute('aria-valuemin', '0');
         this.loadingScreen.setAttribute('aria-valuemax', '100');
-        this.loadingScreen.textContent = "Loading Assets"
 
 
         // this.label = document.createElement("label");

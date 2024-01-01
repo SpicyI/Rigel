@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls';
-
+import { Controls } from './objects';
 
 
 /**
@@ -12,14 +12,14 @@ export class SceneIDE{
     public camera: THREE.PerspectiveCamera;
     public renderer: THREE.WebGLRenderer;	
     public orbit: OrbitControls;
-    public light: THREE.DirectionalLight;
+    public light: THREE.SpotLight;
     public plane: THREE.Mesh;
 
     public onRender: boolean;
     public showHelpers: boolean;
     public windowScale: number;
     public helpersVisible: boolean;
-
+	private controls: Controls;
 
     private resizeWindowListener: EventListener;
 
@@ -33,6 +33,7 @@ export class SceneIDE{
 		this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100000);
 		this.scene.add(this.camera);
 		this.renderer = new THREE.WebGLRenderer();
+		this.controls = new Controls();
 
 
 		// this.orbit = null;
@@ -133,7 +134,41 @@ export class SceneIDE{
     */
 	render(){
 		// this.activeHelpers();
+		this.updatePov();
 		this.renderer.render(this.scene, this.camera);
+	}
+
+
+	updatePov(){
+		// console.log(this.controls.getKeySatate("1"));
+		if (this.controls.getKeySatate('1')){
+			this.camera.position.set(0, 80, 150);
+			this.camera.lookAt(new THREE.Vector3(0, 0, 0));
+			this.orbit.update();
+		}
+		else if (this.controls.getKeySatate('2')){
+			this.camera.position.set(0, 80, -150);
+			this.camera.lookAt(new THREE.Vector3(0, 0, 0));
+			this.orbit.update();
+		}
+		else if (this.controls.getKeySatate('3')){
+			this.camera.position.set(0, 150, 0);
+			this.camera.lookAt(new THREE.Vector3(0, 0, 0));
+			this.orbit.update();
+		}
+		
+	}
+
+	private keyDownListener: EventListener;
+	private keyUpListener: EventListener;
+	/**
+	 * initailize the controls
+	 */
+	initControls(){
+		this.keyDownListener = (e) => { this.controls.OnkeyDown(e as KeyboardEvent) };
+        this.keyUpListener = (e) => { this.controls.OnkeyUP(e as KeyboardEvent) };
+		document.addEventListener("keydown", this.keyDownListener);
+		document.addEventListener("keyup", this.keyUpListener);
 	}
 
 
@@ -150,13 +185,30 @@ export class SceneIDE{
 
 		this.orbit = new OrbitControls(this.camera,this.renderer.domElement);
 
-		this.light = new THREE.DirectionalLight( 0xffffff, 2);
+		this.light = new THREE.SpotLight( 0xffffff, 2);
+		this.light.position.set( 2.5, 500, 2.5 );
+		this.light.angle = Math.PI / 6;
+		this.light.penumbra = 1;
+		this.light.decay = 0;
+		this.light.distance = 0;
+
+		this.light.castShadow = true;
+		this.light.shadow.mapSize.width = 10024;
+		this.light.shadow.mapSize.height = 10024;
+		this.light.shadow.camera.near = 1;
+		this.light.shadow.camera.far = 10000;
+		this.light.shadow.focus = 1;
+
+		let lighthelper = new THREE.SpotLightHelper( this.light );
+		this.scene.add( lighthelper );
+
+		let cube = new THREE.Mesh( new THREE.BoxGeometry( 1, 1, 1 ), new THREE.MeshStandardMaterial( { color: 0x0000ff } ) );
+		cube.position.set(0,3,0);
+		cube.castShadow = true;
+		cube.receiveShadow = true;
+		this.scene.add( cube );
 		
 		this.EnabledShadows();
-		this.light.castShadow = true;
-		this.light.position.set(1000,1000,0);
-		this.light.shadow.mapSize.width = 2048;
-		this.light.shadow.mapSize.height = 2048;
 
 		this.plane_geometry = new THREE.PlaneGeometry(1000,1000);
 		this.plane_material = new THREE.MeshStandardMaterial(
@@ -171,9 +223,10 @@ export class SceneIDE{
 		this.camera.lookAt(new THREE.Vector3(0, 0, 0));
 
 		this.add(this.light);
+		this.initControls();
 		this.init_render(element, scale);
-			
-	}
+				
+		}
 
 	// addGui(newGui, options)
     // {
@@ -230,6 +283,8 @@ export class SceneIDE{
 		
 		this.renderer.domElement.parentNode?.removeChild(this.renderer.domElement);
 		this.renderer.dispose();
+		document.removeEventListener("keydown", this.keyDownListener);
+		document.removeEventListener("keyup", this.keyUpListener);
 
 	}
 }

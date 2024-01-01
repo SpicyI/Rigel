@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { Socket } from 'socket.io';
-import { SocketGateway } from './socket.gateway';
+import { SocketGateway } from './game/socket.gateway';
 
 @Module({
   imports: [],

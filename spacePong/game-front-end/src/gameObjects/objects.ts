@@ -36,20 +36,7 @@ export class Arena {
     }
 }
 
-const keyCodes = {
-    37: 'left',
-    38: 'up',
-    39: 'right',
-    40: 'down',
-    32: 'space',
-    16: 'shift',
-    13: 'enter',
-    27: 'escape',
-    65: 'a',
-    68: 'd',
-    87: 'w',
-    83: 's'
-};
+
 
 const keyStates = {
     left: false,
@@ -63,7 +50,10 @@ const keyStates = {
     a: false,
     d: false,
     w: false,
-    s: false
+    s: false,
+    1: false,
+    2: false,
+    3: false
 };
 
 
@@ -76,7 +66,6 @@ export class Controls {
     /**
      * A map that stores the key codes and their corresponding key names.
      */
-    public keys: Map<number, string>;
 
     /**
      * A map that stores the key names and their corresponding state (true/false).
@@ -87,11 +76,6 @@ export class Controls {
      * Constructs a new instance of the Controls class.
      */
     constructor() {
-        this.keys = new Map();
-        Object.entries(keyCodes).forEach(([key, value]) => {
-            this.keys.set(parseInt(key), value);
-        });
-
         this.state = new Map();
         Object.entries(keyStates).forEach(([key, value]) => {
             this.state.set(key, value);
@@ -124,12 +108,12 @@ export class Controls {
     public getKeySatate(key: string): boolean {
         return this.state.get(key);
     }
-
+    
+    /**
+     * dispose the controls object.
+     */
     public dispose(){
-        this.keys.clear();
         this.state.clear();
-
-        this.keys = null;
         this.state = null;
     }
 }
