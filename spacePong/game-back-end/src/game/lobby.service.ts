@@ -27,6 +27,8 @@ export class lobbyService{
     public game: Game | null;
     public sides: sideSet[];
     public confiramtions: number;
+    public isOn: boolean = false;
+    public isDisposed: boolean = false;
 
     /**
      * Creates a new lobby instance.
@@ -48,6 +50,7 @@ export class lobbyService{
             { side: 'right', pos: new Vector3((this.arena.width / 2), 0, 0) }
         ];
         this.confiramtions = 0;
+
     }
 
     /**
@@ -115,7 +118,8 @@ export class lobbyService{
 
         // check if all players are ready
         if (this.confiramtions === 2) {
-            console.log('confirmed - starting game ')
+            console.log('confirmed - starting game ');
+            this.isOn = true;
             this.setupGame();
         }
 
@@ -123,6 +127,11 @@ export class lobbyService{
 
 
     public dispose() {
+        
+        if (this.isDisposed)
+            return;
+        this.isDisposed = true;
+
         this.players.forEach((value, key) => {
             if (key.playerSocket) {
                 this.io.to(key.playerSocket).emit('ff');
@@ -134,6 +143,8 @@ export class lobbyService{
             }
         });
         this.players.clear();
+        delete this.players;
+        this.players = null;
         if (this.game)
             this.game.dispose();
         this.game = null;
@@ -148,15 +159,26 @@ export class lobbyService{
      */
     public removePlayer(clientToRemove: Socket) {
 
-        console.log(`removing player ${clientToRemove.id} from lobby ${this.id} at ${Date.now()}`);
-        if (!this.players)
+        console.log(`in rmove player ${clientToRemove.id} from lobby ${this.id} state: ${this.isDisposed} at ${Date.now()}`);
+        if (this.isDisposed)
             return;
+        console.log(`removing player ${clientToRemove.id} from lobby ${this.id} at ${Date.now()}`);
+        this.confiramtions -= 1;
+        if (! this.players)
+            return;
+        if (!this.isOn){
+            this.players.forEach((value, key) => {
+                this.io.to(key.playerSocket.id).emit('ff');
+
+            });
+        }
+
         this.players.forEach((value, key) => {
             if (key.playerSocket && key.playerSocket.id == clientToRemove.id) {
 
                     // remove player from game and finish game
                     if (!this.game){
-                        this.io.to(clientToRemove.id).emit('ff');
+                        this.io.to(this.id).emit('ff');
                         return;
                     }
                     this.game.forfeit(clientToRemove.id);

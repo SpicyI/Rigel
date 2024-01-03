@@ -50,10 +50,10 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect{
         console.log(`removing ${client.id} from lobby`);
         const lobby = this.playersLobby.get(client.id);
         if (lobby == undefined)
-			return;
-        console.log(`**==**=> got lobby ${lobby.id}`);
+          return;
+        console.log(`${client.id} got lobby ${lobby.id}`);
         lobby.removePlayer(client);
-		console.log(`**==**=> removed player ${client.id}`);
+		    console.log(`${client.id} removed player ${client.id}`);
         this.lobbies.delete(lobby.id);
         lobby.dispose();
         this.playersLobby.delete(client.id);

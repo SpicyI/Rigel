@@ -79,6 +79,9 @@ export class Game {
     private privateGameId: string = "none";
     private acces_token: string;
     private userId: string = "none";
+
+    private isDisposed: boolean = false;
+
     constructor(container: HTMLElement, acces_token: string, userId: string, gameId: string = "none") {
         this.privateGameId = gameId;
         this.acces_token = acces_token;
@@ -167,6 +170,7 @@ export class Game {
 
     public dispose() {
         console.log(`disposing at ${Date.now()}`);
+        this.isDisposed = true;
         this.container.children.forEach((child) => {
             this.container.remove(child);
         });
@@ -189,7 +193,7 @@ export class Game {
 
         this.loadingScreen.remove();
 
-        this.HDRILoader = null;
+        this.HDRILoader.manager.onProgress = null;
         this.AudioLoader = null;
         this.SkinLoader = null;
         this.audioListener = null;
@@ -230,8 +234,9 @@ export class Game {
     }
 
     private recieveForfeit() {
+        console.log("listening for ff");
         this.client.on("ff", () => {
-            console.log("forfeit");
+            console.log("recived an ff");
             this.dispose();
             this.sceneContainer.innerHTML = "<h1>you won by forfeit</h1>";
         });
@@ -316,6 +321,7 @@ export class Game {
 
         this.HDRILoader.load(skybox.href, (texture) => {
             texture.mapping = THREE.EquirectangularReflectionMapping;
+            if (this.isDisposed) return;
             this.scene.scene.background = texture;
             this.scene.scene.environment = texture;
             this.scene.scene.backgroundIntensity = 3;
@@ -330,7 +336,7 @@ export class Game {
             paddle_model.rotateZ(Math.PI / 2);
             paddle_model.position.z += 8.23;
             paddle_model.position.y += 2;
-
+            
             const cloned = paddle_model.clone();
             cloned.traverse((child) => {
                 if (child instanceof THREE.Mesh) {
@@ -340,10 +346,11 @@ export class Game {
                     child.material.metalness = 0.1; // Make the material more metallic looking
                 }
             });
-            
+            if(this.player && this.opponent && this.scene){
             this.player.center.add(paddle_model);
             this.opponent.center.add(cloned.rotateZ(Math.PI));
             this.scene.render();
+            }
 
         });
 
@@ -353,8 +360,11 @@ export class Game {
             arene_model.scale.set(200 / (bbox.max.x - bbox.min.x), 0.1, 150 / (bbox.max.z - bbox.min.z));
             arene_model.rotateX(Math.PI / 2);
             arene_model.position.set(-100, -150 / 2, 0);
+            // if(this.isDisposed) return;
+            if (this.arena && this.scene){
             this.arena.body.add(arene_model);
             this.scene.render();
+            }
 
         });
 
@@ -372,8 +382,11 @@ export class Game {
             this.modelsArr.push({ model: env_model, mixer: mixer1 });
             env_model.scale.set(200, 200, 200);
             env_model.position.set(100, 0, -3000);
-            this.scene.scene.add(env_model);
-            this.scene.render();
+            // if(this.isDisposed) return;
+            if (this.scene){
+                this.scene.scene.add(env_model);
+                this.scene.render();
+            }
 
         });
 
@@ -386,8 +399,11 @@ export class Game {
             this.modelsArr.push({ model: spec_model, mixer: mixer2 });
             spec_model.scale.set(0.2, 0.2, 0.2);
             spec_model.position.set(0, 0, -120);
+            // if (this.isDisposed) return;
+            if (this.scene){
             this.scene.scene.add(spec_model);
             this.scene.render();
+            }
 
         });
 
@@ -399,9 +415,9 @@ export class Game {
                     child.material.emissiveIntensity = 0.7;
                 }
             });
-            this.ball.body.add(model);
-        }, undefined, (error) => {
-            console.error(error);
+            // if(this.isDisposed) return;
+            if (this.ball)
+                this.ball.body.add(model);
         });
 
         this.GlbLoader.load(avatar1.href,(gltf)=> {
@@ -414,8 +430,10 @@ export class Game {
             vatar_model.scale.set(0.35, 0.35, 0.35);
             vatar_model.rotateY(Math.PI / 2);
             this.modelsArr.push({ model: vatar_model, mixer: mixer3 });
+            // if(this.isDisposed) return;
             vatar_model.position.set(-170, 0, 0);
-            this.scene.scene.add(vatar_model);
+            if(this.scene)
+                this.scene.scene.add(vatar_model);
         });
 
         this.GlbLoader.load(avatar2.href,(gltf)=> {
@@ -429,7 +447,9 @@ export class Game {
             vatar_model2.rotateY(Math.PI / -2);
             this.modelsArr.push({ model: vatar_model2, mixer: mixer4 });
             vatar_model2.position.set(170, 0, 0);
-            this.scene.scene.add(vatar_model2);
+            // if(this.isDisposed) return;
+            if(this.scene)
+                this.scene.scene.add(vatar_model2);
         });
 
         this.AudioLoader.load(ost.href, (buffer) => {
@@ -469,15 +489,14 @@ export class Game {
     }
 
     launch() {
-
+        
+        this.recieveForfeit();
         if (this.privateGameId == "none"){
             this.queueUp();
             this.receiveGameId();
         }
         else
             this.preMadeGame();
-
-        this.recieveForfeit();
         this.receiveWin();
         this.receiveLose();
         this.receiveScore();

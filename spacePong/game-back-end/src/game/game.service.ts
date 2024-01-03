@@ -17,6 +17,7 @@ export class GameService {
     public interval: any;
     public io: Server;
     public id: string;
+    private isFinished: boolean = false;
 
     /**
      * Creates a new Game instance.
@@ -182,6 +183,8 @@ export class GameService {
     */
     async finish() {
 
+        if (this.isFinished)
+            return;
         let winnerId: string;
         let loserId: string
         if (this.playerL.isWinner) {
@@ -196,11 +199,13 @@ export class GameService {
             this.playerL.lose();
             loserId = this.playerL.playerId;
         }
+        this.isFinished = true;
         // await this.matchService.createMatch({
         //     [this.playerL.Score, this.playerR.Score],
         //     "winnerId",
         //     "loserId",
         // });
+        console.log(`game finished with ${this.playerL.Score} - ${this.playerR.Score}`);
         this.dispose();
         console.log('game finished');
     }
@@ -208,12 +213,16 @@ export class GameService {
     public forfeit(playerSocketId: string) {
 
         clearInterval(this.interval);
-
+        console.log(`player ${playerSocketId} forfeited`);
         if (this.playerL.socket.id == playerSocketId) {
             this.playerL.FF();
+            this.playerL.Score = 0;
+            this.playerR.Score = 5;
         }
         else if (this.playerR.socket.id == playerSocketId){
             this.playerR.FF();
+            this.playerR.Score = 0;
+            this.playerL.Score = 5;
         }
         this.finish();
     }
